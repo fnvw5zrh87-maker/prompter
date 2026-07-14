@@ -89,6 +89,9 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
 .chip.fix{background:var(--brassd);border-color:var(--brass);color:var(--brass)}
 .chip .x{color:var(--dim2);padding:0 2px;font-size:14px;line-height:1}
 .pin::before{content:"📌";font-size:9px;margin-right:1px}
+.chip .cy{color:inherit;font:inherit;padding:0;display:inline-flex;align-items:center;gap:5px}
+.setbtn{border:1px solid var(--rule2);background:var(--ink3);color:var(--dim);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700}
+.setbtn.on{background:var(--brass);border-color:var(--brass);color:#241c08}
 
 .gcard{background:var(--ink2);border:1px solid var(--rule);border-radius:12px}
 .ghead{display:flex;align-items:center;gap:6px;padding:8px 10px}
@@ -204,16 +207,36 @@ const DEF=[
 ["画風・タッチ",0,1,true,["anime coloring|アニメ塗り","flat color|フラット塗り","cel shading|セル塗り","watercolor (medium)|水彩","sketch|ラフ","lineart|線画","thick outlines|太線","retro artstyle|レトロ画風","1990s (style)|90年代風","1980s (style)|80年代風","impasto|厚塗り","ink wash painting|水墨画","ukiyo-e|浮世絵","chibi|ちび","realistic|リアル寄り","official art|公式絵風","concept art|コンセプトアート","minimalism|ミニマル","art nouveau|アールヌーヴォー","faux traditional media|アナログ風","marker (medium)|マーカー","colored pencil (medium)|色鉛筆","oil painting (medium)|油彩","pixel art|ドット絵"]]
 ];
 
+const FRAME_TAGS=["portrait","upper body","cowboy shot","full body","close-up","wide shot","bust"];
+const DEF_FULL="boots, heels, sneakers, mary janes, loafers, sandals, zouri, geta, slippers, barefoot, thighhighs, pantyhose, kneehighs, socks, garter, bare legs, pants, jeans, leggings, long skirt, seiza, wariza, squatting, kneeling, lying, jumping, running, dancing, walking, full body";
+const DEF_COWBOY="skirt, shorts, belt, zettai ryouiki, hand on hip, thigh, hip, sitting, crossed legs";
 const DEFAULT_SETTINGS={
   prefix:"masterpiece, best quality, very aesthetic, absurdres",
   suffix:"",
   negative:"lowres, worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digits, jpeg artifacts, signature, watermark, username, blurry, text",
-  escapeParens:true, underscore:false, batch:5
+  escapeParens:true, underscore:false, batch:5,
+  autoFrame:true, frameFull:DEF_FULL, frameCowboy:DEF_COWBOY
 };
+
+/* 出てるタグから「どこまで写ってるか」を判定してフレーミングタグを差し込む */
+function applyFrame(D,byGroup){
+  const s=D.settings;
+  if(!s.autoFrame) return;
+  const txt=Object.values(byGroup).flat().map(t=>norm(t.tag)).join(" | ");
+  const hit=list=>String(list||"").split(",").map(x=>x.trim().toLowerCase())
+    .filter(Boolean).some(k=>txt.includes(k));
+  const want = hit(s.frameFull) ? "full body" : hit(s.frameCowboy) ? "cowboy shot" : "upper body";
+  for(const gid of Object.keys(byGroup))
+    byGroup[gid]=byGroup[gid].filter(t=>!FRAME_TAGS.includes(norm(t.tag)));
+  const g=D.groups.find(x=>x.tags.some(t=>FRAME_TAGS.includes(norm(t.tag))))||D.groups[0];
+  if(!g) return;
+  const own=g.tags.find(t=>norm(t.tag)===want);
+  byGroup[g.id]=[own||{id:"__frame",tag:want,ja:"自動判定",w:1,emph:1,on:true,fix:false},...(byGroup[g.id]||[])];
+}
 
 function buildDefaults(){
   const groups=DEF.map(([name,min,max,on,tags])=>({
-    id:uid(),name,min,max,on,req:false,
+    id:uid(),name,min,max,on,req:false,mode:"roll",setOn:false,
     tags:tags.map(s=>{const[t,ja]=s.split("|");return{id:uid(),tag:t.trim(),ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false};})
   }));
   const gid=n=>(groups.find(g=>g.name===n)||{}).id;
@@ -273,9 +296,15 @@ function generate(D,locks,prev){
     picked.forEach(t=>fire({k:"tag",id:t.id}));
     if(picked.length) fire({k:"group",id:g.id});
   };
-  // 0) 固定タグを先に確定（排他もこれが勝つ）
+  // 0) セット枠 と 固定タグ を先に確定（排他もこれが勝つ）
   for(const g of D.groups){
     if(!g.on) continue;
+    if(g.mode==="set"){
+      done.add(g.id);
+      if(g.setOn) emit(g,g.tags.filter(t=>t.on));
+      else byGroup[g.id]=[];
+      continue;
+    }
     const fx=g.tags.filter(t=>t.on&&t.fix);
     if(fx.length) emit(g,fx);
   }
@@ -286,7 +315,7 @@ function generate(D,locks,prev){
     byGroup[g.id]=[]; done.add(g.id); emit(g,kept);
   }
   // 2) 必須 → 通常
-  const order=[...D.groups.filter(g=>g.req),...D.groups.filter(g=>!g.req)];
+  const order=[...D.groups.filter(g=>g.req&&g.mode!=="set"),...D.groups.filter(g=>!g.req&&g.mode!=="set")];
   for(const g of order){
     if(!g.on||done.has(g.id)) continue;
     done.add(g.id);
@@ -318,11 +347,12 @@ function generate(D,locks,prev){
     }
     if(!ch) break;
   }
+  applyFrame(D,byGroup);
   return {byGroup};
 }
 function rerollOne(D,res,gid){
   const g=D.groups.find(x=>x.id===gid);
-  if(!g) return res;
+  if(!g||g.mode==="set") return res;
   const {bT,bG,fire}=makeBlocker(D);
   for(const og of D.groups){
     if(og.id===gid) continue;
@@ -553,10 +583,24 @@ function viewGen(){
     <div class="row" style="margin-bottom:8px"><div class="eb" style="margin:0">PROMPT</div><div class="sp"></div>
       <button class="btn" data-act="copyPrompt" style="padding:4px 8px;font-size:11px;color:${p?"var(--brass)":"var(--dim2)"};border-color:${p?"var(--brass)":"var(--rule)"}">コピー</button></div>
     <div class="out prompt">${outHTML()}</div>
-    <div class="mini" style="margin-top:8px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ</div>
+    <div class="mini" style="margin-top:8px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ<br>
+      下のタグを<b style="color:var(--txt)">タップすると次の単語に切り替わります</b>（red eyes → blue eyes → …）</div>
   </div></div>`;
 
+  const sets=D.groups.filter(g=>g.on&&g.mode==="set");
+  if(sets.length){
+    h+=`<div class="card"><div class="pad">
+      <div class="row" style="margin-bottom:8px"><span style="flex:none">📦</span>
+        <div class="sp"><b style="font-size:13px">セット枠</b>
+          <div class="mini">押すとそのグループの単語が丸ごと入る。抽選では変わらない。</div></div></div>
+      <div class="chips">`+sets.map(g=>
+        `<button class="setbtn${g.setOn?" on":""}" data-act="setToggle" data-id="${g.id}">${g.setOn?"● ":"○ "}${esc(g.name)}</button>`
+      ).join("")+`</div>
+    </div></div>`;
+  }
+
   for(const g of D.groups){
+    if(g.mode==="set") continue;
     if(!g.on){
       h+=`<div class="goff"><span class="sp">${esc(g.name)}</span><span class="mono" style="font-size:10px">OFF</span>${sw(false,"gOn",` data-id="${g.id}"`)}</div>`;
       continue;
@@ -575,7 +619,9 @@ function viewGen(){
     </div>`;
     if(picks.length){
       h+=`<div class="chips" style="padding:9px 10px">`+picks.map(t=>
-        `<span class="chip${t.fix?" fix":""}">${t.fix?'<span style="font-size:9px">📌</span>':""}${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}<button class="x" data-act="dropTag" data-id="${g.id}" data-tid="${t.id}">✕</button></span>`
+        `<span class="chip${t.fix?" fix":""}">
+          <button class="cy" data-act="cycle" data-id="${g.id}" data-tid="${t.id}">${t.fix?'<span style="font-size:9px">📌</span>':""}${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}</button>
+          <button class="x" data-act="dropTag" data-id="${g.id}" data-tid="${t.id}">✕</button></span>`
       ).join("")+`</div>`;
     } else if(V.result){
       h+=`<div class="mini" style="padding:8px 12px">なし${g.max>0?"（排他ルールで止まったか、0個抽選）":""}</div>`;
@@ -628,15 +674,26 @@ function viewGroups(){
     </div>`;
 
     if(open){
+      const isSet=g.mode==="set";
       h+=`<div style="padding:0 12px 12px;border-top:1px solid var(--rule)">
         <div class="row" style="padding:10px 0;font-size:12px;color:var(--dim)">
-          <span>抽選数</span>
-          <select data-sel="gmin" data-id="${g.id}">${numOpts(g.min)}</select><span>〜</span>
-          <select data-sel="gmax" data-id="${g.id}">${numOpts(g.max)}</select><span>個</span>
+          ${isSet?`<span style="color:var(--brass);font-weight:700">📦 セット枠（抽選しない）</span>`:`
+            <span>抽選数</span>
+            <select data-sel="gmin" data-id="${g.id}">${numOpts(g.min)}</select><span>〜</span>
+            <select data-sel="gmax" data-id="${g.id}">${numOpts(g.max)}</select><span>個</span>`}
           <div class="sp"></div>
           <button data-act="delG" data-id="${g.id}" style="color:var(--ng)">🗑</button>
         </div>
 
+        <div class="row" style="background:var(--ink3);border-radius:8px;padding:8px 12px;margin-bottom:8px">
+          <span style="flex:none">📦</span>
+          <div class="sp">
+            <div style="font-size:12px;font-weight:700;color:${isSet?"var(--brass)":"var(--dim)"}">セット枠にする</div>
+            <div class="mini">抽選せず、生成タブのボタン1つで丸ごと入れる</div>
+          </div>
+          ${sw(isSet,"gMode",` data-id="${g.id}"`)}
+        </div>
+${isSet?"":`
         <div class="row" style="background:var(--ink3);border-radius:8px;padding:8px 12px;margin-bottom:8px">
           <span style="flex:none">📌</span>
           <div class="sp">
@@ -644,7 +701,7 @@ function viewGroups(){
             <div class="mini">排他ルールで潰されず、最優先で必ず1個以上出す</div>
           </div>
           ${sw(!!g.req,"gReq",` data-id="${g.id}"`)}
-        </div>
+        </div>`}
 
         <div class="row" style="gap:8px;margin-bottom:10px">
           <button class="btn full" data-act="fixAll" data-id="${g.id}">📌 全部を固定に</button>
@@ -862,6 +919,21 @@ function viewSet(){
   </div></div>
 
   <div class="card"><div class="pad col">
+    <div class="row"><span style="flex:none">🎬</span>
+      <div class="sp"><div style="font-size:13px;font-weight:700">自動フレーミング</div>
+        <div class="mini">出たタグから「どこまで写ってるか」を判定して<br>
+          <span class="mono" style="color:var(--tag)">upper body / cowboy shot / full body</span> を自動で差し替える</div></div>
+      ${sw(s.autoFrame,"autoFrame")}</div>
+    ${s.autoFrame?`
+      <div><div class="eb">これが出たら full body（全身）</div>
+        <textarea rows="3" data-inp="frameFull" data-k="ff">${esc(s.frameFull)}</textarea></div>
+      <div><div class="eb">これが出たら cowboy shot（腰上）</div>
+        <textarea rows="2" data-inp="frameCowboy" data-k="fc">${esc(s.frameCowboy)}</textarea></div>
+      <div class="mini">上から順に判定。どちらにも当たらなければ upper body。<br>部分一致（<span class="mono">boots</span> は <span class="mono">thigh boots</span> にも当たる）。</div>
+    `:""}
+  </div></div>
+
+  <div class="card"><div class="pad col">
     <div class="row"><div class="sp"><div style="font-size:13px;font-weight:700">括弧をエスケープ</div>
       <div class="mini mono">bow (weapon) → bow \\(weapon\\)</div></div>${sw(s.escapeParens,"escP")}</div>
     <div style="height:1px;background:var(--rule)"></div>
@@ -1064,6 +1136,36 @@ const ACT={
 
   gOn:(d)=>mutate(()=>{ const g=G(d.id); g.on=!g.on; }),
   gReq:(d)=>mutate(()=>{ const g=G(d.id); g.req=!g.req; }),
+  gMode:(d)=>mutate(()=>{
+    const g=G(d.id);
+    g.mode = g.mode==="set" ? "roll" : "set";
+    if(g.mode==="set"){ g.req=false; g.setOn=false; }
+    if(V.result) V.result.byGroup[g.id]=[];
+  }),
+  setToggle:(d)=>{
+    const g=G(d.id);
+    g.setOn=!g.setOn;
+    if(!V.result) V.result={byGroup:{}};
+    V.result={byGroup:{...V.result.byGroup,[g.id]: g.setOn ? g.tags.filter(t=>t.on) : []}};
+    V.dirty=true; persist(); render();
+  },
+  cycle:(d)=>{
+    const g=G(d.id);
+    if(!g||!V.result) return;
+    const cur=V.result.byGroup[g.id]||[];
+    const i=cur.findIndex(t=>t.id===d.tid);
+    if(i<0) return;
+    const t=cur[i];
+    // 固定タグは「固定の付け替え」、通常タグは結果の差し替え
+    const pool=g.tags.filter(x=>x.on&&(t.fix||!x.fix));
+    const k=pool.findIndex(x=>x.id===t.id);
+    if(k<0||pool.length<2) return;
+    const nx=pool[(k+1)%pool.length];
+    if(t.fix){ t.fix=false; nx.fix=true; V.dirty=true; persist(); }
+    const arr=[...cur]; arr[i]=nx;
+    V.result={byGroup:{...V.result.byGroup,[g.id]:arr}};
+    render();
+  },
   toggleG:(d)=>{ V.openG[d.id]=!V.openG[d.id]; render(); },
   moveUp:(d)=>mutate(()=>{ const i=+d.i; if(i>0){ const a=D.groups; [a[i-1],a[i]]=[a[i],a[i-1]]; } }),
   moveDn:(d)=>mutate(()=>{ const i=+d.i; const a=D.groups; if(i<a.length-1){ [a[i+1],a[i]]=[a[i],a[i+1]]; } }),
@@ -1227,6 +1329,7 @@ const ACT={
   },
 
   escP:()=>mutate(()=>{ D.settings.escapeParens=!D.settings.escapeParens; }),
+  autoFrame:()=>mutate(()=>{ D.settings.autoFrame=!D.settings.autoFrame; }),
   under:()=>mutate(()=>{ D.settings.underscore=!D.settings.underscore; }),
 
   closeModal:()=>{ V.modal=null; render(); },
@@ -1261,6 +1364,8 @@ const INP={
   prefix:v=>{ D.settings.prefix=v; V.dirty=true; persist(); refreshOut(); },
   suffix:v=>{ D.settings.suffix=v; V.dirty=true; persist(); refreshOut(); },
   negative:v=>{ D.settings.negative=v; V.dirty=true; persist(); },
+  frameFull:v=>{ D.settings.frameFull=v; V.dirty=true; persist(); },
+  frameCowboy:v=>{ D.settings.frameCowboy=v; V.dirty=true; persist(); },
   gname:(v,d)=>{ G(d.id).name=v; V.dirty=true; persist(); },
   mTag:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.tag=v; V.dirty=true; persist(); },
   mJa:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.ja=v; V.dirty=true; persist(); },
@@ -1334,7 +1439,12 @@ window.addEventListener("error",e=>{
   if(!fromStore) D=buildDefaults();
   D.settings={...DEFAULT_SETTINGS,...(D.settings||{})};
   D.rules=D.rules||[];
-  D.groups.forEach(g=>{ if(g.req===undefined) g.req=false; g.tags.forEach(t=>{ if(t.fix===undefined) t.fix=false; }); });
+  D.groups.forEach(g=>{
+    if(g.req===undefined) g.req=false;
+    if(g.mode===undefined) g.mode="roll";
+    if(g.setOn===undefined) g.setOn=false;
+    g.tags.forEach(t=>{ if(t.fix===undefined) t.fix=false; });
+  });
   V.fresh=!fromStore&&canStore===false?true:!fromStore;
   render();
 })();
