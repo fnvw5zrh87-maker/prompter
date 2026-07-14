@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="タグガチャ">
+<meta name="theme-color" content="#0f1420">
+<title>タグガチャ</title>
+<style>
+:root{
+  --ink:#0f1420; --ink2:#161c2a; --ink3:#1e2435; --ink4:#272e43;
+  --rule:#2c3448; --rule2:#3d4763;
+  --txt:#e7eaf1; --dim:#8b93a7; --dim2:#5d6478;
+  --tag:#4fb3f0; --tagbg:#12293c;
+  --brass:#d9a441; --brassd:#3a2f16;
+  --ng:#e0574f; --ngbg:#33191a;
+  --link:#52b788; --linkbg:#122b23;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--txt);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  font-size:14px;line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,textarea,select{font:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:0 12px}
+
+header{position:sticky;top:0;z-index:30;background:var(--ink);border-bottom:1px solid var(--rule);padding-top:env(safe-area-inset-top)}
+.hrow{display:flex;align-items:center;gap:12px;padding:14px 16px 8px}
+.bar{width:5px;height:30px;background:var(--brass);border-radius:3px;flex:none}
+.ttl{font-size:17px;font-weight:800;letter-spacing:.06em}
+.sub{font-size:9px;color:var(--dim2);letter-spacing:.22em;font-weight:700}
+.stat{font-family:var(--mono);font-size:10px;color:var(--dim2);text-align:right;line-height:1.5;flex:none}
+.stat b{color:var(--tag);font-weight:400}
+.save{border:1px solid var(--brass);color:var(--brass);border-radius:8px;padding:7px 9px;flex:none;font-size:12px;font-weight:700}
+.save.on{background:var(--brass);color:#241c08}
+nav{display:flex;gap:4px;padding:0 8px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav button{flex:none;font-size:12px;font-weight:700;color:var(--dim2);border-radius:8px;padding:8px 12px;border:1px solid transparent}
+nav button.sel{background:var(--brass);color:#241c08;border-color:var(--brass)}
+
+main{padding:12px 0 40px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--ink2);border:1px solid var(--rule);border-radius:12px}
+.card.hi{border-color:var(--brass)}
+.pad{padding:14px 16px}
+.eb{font-size:10px;letter-spacing:.18em;font-weight:700;color:var(--dim2);margin-bottom:5px}
+.row{display:flex;align-items:center;gap:8px}
+.col{display:flex;flex-direction:column;gap:10px}
+.sp{flex:1}
+.muted{color:var(--dim);font-size:11px;line-height:1.8}
+.mini{color:var(--dim2);font-size:10.5px;line-height:1.7}
+.mono{font-family:var(--mono)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:700;border:1px solid var(--rule);color:var(--dim)}
+.btn.full{width:100%}
+.btn.solid{background:var(--ink4);color:var(--txt);border-color:var(--rule2)}
+.btn.lever{background:var(--brass);color:#241c08;border-color:var(--brass)}
+.btn.ng{background:var(--ngbg);color:var(--ng);border-color:var(--ng)}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.btn.lg{padding:15px;font-size:15px}
+
+input[type=text],input[type=number],textarea,select{
+  width:100%;background:var(--ink);color:var(--txt);border:1px solid var(--rule);
+  border-radius:8px;padding:9px 11px;font-size:14px;outline:none;appearance:none;
+}
+textarea{font-family:var(--mono);font-size:12px;color:var(--tag);resize:vertical}
+select{padding:7px 9px;font-size:13px;width:auto}
+input[type=number]{width:74px}
+input[type=file]{color:var(--dim);font-size:12px;padding:8px}
+
+.sw{width:38px;height:21px;border-radius:99px;background:var(--ink4);border:1px solid var(--rule2);position:relative;flex:none}
+.sw.on{background:var(--brass);border-color:var(--brass)}
+.sw i{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:99px;background:var(--dim);transition:left .13s}
+.sw.on i{left:19px;background:#241c08}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--tagbg);border:1px solid var(--rule);border-radius:6px;padding:3px 7px;font-family:var(--mono);font-size:12px;color:var(--tag)}
+.chip .ja{font-family:inherit;font-size:10px;color:var(--dim2)}
+.chip.off{opacity:.4;background:var(--ink3);color:var(--dim2)}
+.chip.fix{background:var(--brassd);border-color:var(--brass);color:var(--brass)}
+.chip .x{color:var(--dim2);padding:0 2px;font-size:14px;line-height:1}
+.pin::before{content:"📌";font-size:9px;margin-right:1px}
+
+.gcard{background:var(--ink2);border:1px solid var(--rule);border-radius:12px}
+.ghead{display:flex;align-items:center;gap:6px;padding:8px 10px}
+.gname{font-size:13px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gname input{background:none;border:0;padding:0;font-size:13px;font-weight:700;width:100%}
+.ic{border:1px solid var(--rule);border-radius:6px;padding:5px 6px;color:var(--dim2);flex:none;line-height:1}
+.ic.on{border-color:var(--brass);color:var(--brass)}
+.ic.solid{background:var(--ink4);border-color:var(--rule2);color:var(--txt)}
+.goff{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px dashed var(--rule);border-radius:8px;background:var(--ink2);opacity:.55;font-size:13px;color:var(--dim2)}
+
+.out{background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:12px;min-height:92px;
+  font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--tag);word-break:break-word;-webkit-user-select:text;user-select:text}
+.out.empty{color:var(--dim2)}
+
+.rule-item{display:block;width:100%;text-align:left;background:var(--ink2);border:1px solid var(--rule);border-radius:12px;padding:12px}
+.rule-item.ex{border-left:3px solid var(--ng)}
+.rule-item.lk{border-left:3px solid var(--link)}
+.badge{font-size:11px;font-weight:800;letter-spacing:.08em}
+.tgt{border-radius:6px;padding:3px 7px;font-size:12px;font-family:var(--mono)}
+.tgt.g{font-family:inherit}
+.tgt.ex{background:var(--ngbg);border:1px solid var(--ng);color:var(--ng)}
+.tgt.lk{background:var(--linkbg);border:1px solid var(--link);color:var(--link)}
+.tgt.src{background:var(--tagbg);border:1px solid var(--rule2);color:var(--tag)}
+.tgt.src.g{color:var(--txt)}
+
+.err{background:var(--ngbg);border:1px solid var(--ng);color:var(--ng);border-radius:8px;padding:9px 11px;font-size:11px;line-height:1.7;word-break:break-all}
+.warn{background:var(--ink2);border:1px solid var(--rule);border-radius:12px;padding:12px 16px;font-size:11px;color:var(--dim);line-height:1.85}
+.toast{background:var(--ink4);border:1px solid var(--brass);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700}
+.ph{border:1px dashed var(--rule);border-radius:8px;padding:22px;text-align:center;color:var(--dim2);font-size:12px}
+
+#modal{position:fixed;inset:0;z-index:50;background:rgba(6,9,16,.78);display:flex;align-items:flex-end;justify-content:center}
+#modal.hide{display:none}
+.sheet{width:100%;max-width:520px;max-height:88vh;background:var(--ink2);border:1px solid var(--rule2);
+  border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
+@media(min-width:640px){#modal{align-items:center}.sheet{border-radius:16px}}
+.shead{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--rule)}
+.shead b{font-size:14px}
+.sbody{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.pickrow{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--ink3);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:13px}
+
+.uk{display:flex;align-items:center;gap:8px;background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:6px 8px}
+.uk.off{background:transparent;opacity:.4}
+.cb{width:20px;height:20px;border:1px solid var(--rule2);border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;color:#241c08}
+.cb.on{background:var(--brass);border-color:var(--brass)}
+.uk .nm{flex:1;min-width:0;font-family:var(--mono);font-size:12px;color:var(--tag);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uk .to{flex:none;max-width:130px;background:var(--ink3);border:1px solid var(--rule2);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.lever{position:sticky;bottom:0;z-index:20;background:var(--ink);border-top:1px solid var(--rule);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.lever .wrap{display:flex;gap:8px;padding:0}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="bar"></div>
+    <div class="sp">
+      <div class="ttl">タグガチャ</div>
+      <div class="sub">DANBOORU TAG PROMPT ROLLER</div>
+    </div>
+    <div class="stat" id="stat"></div>
+    <button class="save" id="save" data-act="backup">保存</button>
+  </div>
+  <nav id="nav"></nav>
+</header>
+<div class="wrap"><main id="app"></main></div>
+<div id="lever"></div>
+<div id="modal" class="hide"></div>
+
+<script>
+"use strict";
+/* ══════════ 保存（localStorage。ダメならメモリ） ══════════ */
+const KEY = "tag-gacha-v1";
+let memStore = null, canStore = true;
+function loadRaw(){ try{ return localStorage.getItem(KEY); }catch(e){ canStore=false; return memStore; } }
+function saveRaw(v){ try{ localStorage.setItem(KEY, v); }catch(e){ canStore=false; memStore=v; } }
+
+/* ══════════ 小物 ══════════ */
+let _n=0;
+const uid=()=>Date.now().toString(36)+(_n++).toString(36)+Math.random().toString(36).slice(2,6);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const randInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const norm=s=>String(s).replace(/_/g," ").trim().toLowerCase();
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const $=id=>document.getElementById(id);
+
+/* ══════════ 初期タグ辞書 ══════════ */
+const DEF=[
+["基本構成",1,1,true,["1girl, solo|女の子ひとり","1boy, solo|男の子ひとり","1girl|女の子","1boy|男の子","2girls|女の子ふたり","1girl, 1boy|男女ペア","1other, solo|性別不明ひとり"]],
+["構図・カメラ",1,1,true,["portrait|顔中心","upper body|上半身","cowboy shot|腰上","full body|全身","close-up|クローズアップ","from above|俯瞰","from below|アオリ","from side|横から","from behind|後ろから","dutch angle|斜め構図","wide shot|引き","profile|真横顔","three-quarter view|斜め45度","foreshortening|パース強め","dynamic angle|ダイナミック","straight-on|正面","pov|主観視点"]],
+["髪の長さ",1,1,true,["very short hair|ベリーショート","short hair|ショート","medium hair|ミディアム","long hair|ロング","very long hair|スーパーロング","absurdly long hair|超ロング","bob cut|ボブ","hime cut|姫カット"]],
+["髪型・毛流れ",1,2,true,["twintails|ツインテール","low twintails|ローツイン","ponytail|ポニテ","high ponytail|ハイポニー","side ponytail|サイドポニー","braid|三つ編み","twin braids|ツイン三つ編み","single braid|一本三つ編み","french braid|編み込み","braided ponytail|編みポニー","hair bun|お団子","double bun|ダブルお団子","half updo|ハーフアップ","messy hair|ラフ・寝癖","straight hair|ストレート","wavy hair|ウェーブ","curly hair|カール","drill hair|ドリル","ringlets|縦ロール","ahoge|アホ毛","antenna hair|触角毛","sidelocks|サイドの毛束","hair between eyes|前髪の毛束","hair over one eye|片目隠れ","blunt bangs|ぱっつん前髪","swept bangs|流し前髪","parted bangs|分け前髪","curtained hair|カーテン前髪","hair intakes|インテーク","floating hair|なびく髪"]],
+["髪色",1,1,true,["black hair|黒","brown hair|茶","blonde hair|金","silver hair|銀","white hair|白","grey hair|グレー","blue hair|青","light blue hair|水色","aqua hair|アクア","green hair|緑","red hair|赤","pink hair|ピンク","purple hair|紫","orange hair|オレンジ","multicolored hair|多色","gradient hair|グラデ","two-tone hair|ツートン","colored inner hair|インナーカラー","streaked hair|メッシュ"]],
+["目の形",1,1,true,["tsurime|吊り目","tareme|垂れ目","jitome|ジト目","sanpaku|三白眼","half-closed eyes|半目","closed eyes|目を閉じる","one eye closed|片目つむり","narrowed eyes|細めた目","wide-eyed|見開き","aegyo sal|涙袋","heavy-lidded eyes|眠たげ","crazy eyes|狂気の目"]],
+["視線",1,1,true,["looking at viewer|カメラ目線","looking away|視線そらし","looking to the side|横目","looking back|振り返り","looking up|見上げ","looking down|見下ろし","looking afar|遠くを見る","eye contact|見つめ合い"]],
+["瞳の色",1,1,true,["blue eyes|青","red eyes|赤","green eyes|緑","yellow eyes|黄","purple eyes|紫","brown eyes|茶","black eyes|黒","pink eyes|ピンク","aqua eyes|アクア","orange eyes|オレンジ","grey eyes|グレー","heterochromia|オッドアイ","gradient eyes|グラデ瞳","multicolored eyes|多色瞳"]],
+["瞳孔・光",0,1,true,["star-shaped pupils|星型瞳孔","heart-shaped pupils|ハート瞳孔","cross-shaped pupils|十字瞳孔","symbol-shaped pupils|記号瞳孔","slit pupils|縦長瞳孔","ringed eyes|輪状の瞳","glowing eyes|発光する目","sparkling eyes|キラキラ目","empty eyes|ハイライトなし","constricted pupils|縮んだ瞳孔"]],
+["顔の特徴・ほくろ",0,2,true,["mole under eye|目元のほくろ","mole under mouth|口元のほくろ","mole on cheek|頬のほくろ","mole on neck|首のほくろ","freckles|そばかす","scar across eye|目の傷","scar on cheek|頬の傷","fang|八重歯","fangs|牙","skin fang|肌色の牙","sharp teeth|鋭い歯","eyebags|クマ","blush stickers|丸チーク","facial mark|顔の紋様","forehead mark|額の紋様","eyeshadow|アイシャドウ","eyeliner|アイライン","lipstick|口紅","tear|涙ひとつぶ"]],
+["眉",0,1,false,["thick eyebrows|太眉","thin eyebrows|細眉","worried eyebrows|困り眉","v-shaped eyebrows|怒り眉","eyebrows visible through hair|前髪から透ける眉"]],
+["表情",1,1,true,["smile|微笑","light smile|薄い笑み","grin|ニヤリ","evil grin|邪悪な笑み","smug|ドヤ顔","seductive smile|妖艶な笑み","open mouth|口を開ける","closed mouth|口を閉じる",":d|にっこり",":o|驚き口",":3|猫口","pout|むくれ","frown|しかめ面","angry|怒り","embarrassed|照れ","blush|赤面","crying|泣き","crying with eyes open|涙を流す","expressionless|無表情","serious|真剣","surprised|驚き","sleepy|眠そう","happy|嬉しい","sad|悲しい","scared|怯え","determined|決意","tongue out|舌出し","wink|ウインク","laughing|笑い","nervous|緊張"]],
+["種族・獣要素",0,2,false,["animal ears|獣耳","cat ears|猫耳","fox ears|狐耳","dog ears|犬耳","rabbit ears|兎耳","wolf ears|狼耳","animal ear fluff|耳のもふもふ","cat tail|猫尻尾","fox tail|狐尻尾","dog tail|犬尻尾","rabbit tail|兎尻尾","wolf tail|狼尻尾","tail|尻尾","horns|角","curved horns|曲がった角","demon horns|悪魔の角","dragon horns|竜の角","oni horns|鬼の角","pointy ears|尖った耳","elf|エルフ","dark elf|ダークエルフ","angel wings|天使の翼","demon wings|悪魔の翼","feathered wings|羽の翼","fairy wings|妖精の羽","halo|光輪","mechanical arms|機械の腕","robot joints|ロボ関節","android|アンドロイド","vampire|吸血鬼","mermaid|人魚","monster girl|モンスター娘"]],
+["体型・雰囲気",0,1,false,["mature female|大人の女性","muscular female|筋肉質","slender|華奢","petite|小柄","tall female|長身","toned|引き締まった","plump|ぽっちゃり"]],
+["服装（メイン）",1,1,true,["school uniform|制服","serafuku|セーラー服","blazer|ブレザー","sailor collar|セーラー襟","gakuran|学ラン","hoodie|パーカー","sweater|セーター","turtleneck|タートルネック","sweater vest|ベスト","dress shirt|ワイシャツ","blouse|ブラウス","dress|ワンピース","sundress|サンドレス","evening gown|イブニングドレス","gothic lolita|ゴスロリ","lolita fashion|ロリータ","maid|メイド","kimono|着物","yukata|浴衣","hakama|袴","miko|巫女","japanese clothes|和装","china dress|チャイナドレス","armor|鎧","plate armor|全身鎧","knight|騎士","witch|魔女","wizard robe|魔術師のローブ","nun|シスター","habit|修道服","military uniform|軍服","police uniform|警官","lab coat|白衣","business suit|スーツ","leather jacket|革ジャン","cardigan|カーディガン","coat|コート","trench coat|トレンチコート","winter coat|冬コート","cape|ケープ","cloak|マント","hooded cloak|フード付きマント","casual|私服","tracksuit|ジャージ","sportswear|スポーツウェア","apron|エプロン","overalls|オーバーオール","one-piece swimsuit|水着","pajamas|パジャマ","idol costume|アイドル衣装","magical girl|魔法少女"]],
+["ボトムス・脚",0,2,true,["pleated skirt|プリーツスカート","miniskirt|ミニスカ","long skirt|ロングスカート","skirt|スカート","shorts|ショートパンツ","pants|パンツ","jeans|ジーンズ","leggings|レギンス","thighhighs|ニーソ","black thighhighs|黒ニーソ","white thighhighs|白ニーソ","pantyhose|タイツ","kneehighs|ハイソックス","socks|靴下","garter straps|ガーター","zettai ryouiki|絶対領域","bare legs|素足"]],
+["靴",0,1,true,["boots|ブーツ","thigh boots|サイハイブーツ","knee boots|ニーハイブーツ","high heels|ハイヒール","sneakers|スニーカー","mary janes|メリージェーン","loafers|ローファー","sandals|サンダル","zouri|草履","geta|下駄","slippers|スリッパ","barefoot|裸足"]],
+["帽子・頭部",0,1,true,["hat|帽子","witch hat|とんがり帽子","beret|ベレー帽","cap|キャップ","baseball cap|野球帽","sun hat|つば広帽","straw hat|麦わら帽子","beanie|ニット帽","top hat|シルクハット","peaked cap|軍帽","hood|フード","hood up|フードを被る","crown|王冠","tiara|ティアラ","headband|ヘッドバンド","hairband|カチューシャ","veil|ベール","animal ear headphones|猫耳ヘッドホン"]],
+["アクセサリー",0,3,true,["hair ribbon|髪リボン","hair bow|髪の蝶結び","hairclip|ヘアピン","hair flower|髪飾りの花","hair ornament|髪飾り","x hair ornament|バツ髪飾り","glasses|眼鏡","round eyewear|丸眼鏡","sunglasses|サングラス","eyepatch|眼帯","choker|チョーカー","collar|首輪","necklace|ネックレス","pendant|ペンダント","earrings|イヤリング","hoop earrings|フープピアス","single earring|片耳ピアス","gloves|手袋","fingerless gloves|指なし手袋","elbow gloves|ロンググローブ","bracelet|ブレスレット","ring|指輪","wristband|リストバンド","scarf|マフラー","necktie|ネクタイ","bowtie|蝶ネクタイ","ribbon|リボン","belt|ベルト","headphones|ヘッドホン","mask|マスク","bandages|包帯","bandaid|絆創膏","chain|チェーン","piercing|ピアス"]],
+["小物・持ち物",0,1,false,["holding sword|剣を持つ","katana|刀","holding staff|杖を持つ","wand|ワンド","holding book|本を持つ","book|本","holding umbrella|傘を差す","umbrella|傘","holding flower|花を持つ","bouquet|花束","holding cup|カップを持つ","teacup|ティーカップ","holding phone|スマホを持つ","camera|カメラ","guitar|ギター","violin|ヴァイオリン","holding gun|銃を持つ","bow (weapon)|弓","spear|槍","scythe|鎌","stuffed animal|ぬいぐるみ","holding stuffed toy|ぬいを抱える","cat|猫","balloon|風船","lantern|提灯","candy|飴","ice cream|アイス","folding fan|扇子","shopping bag|買い物袋","backpack|リュック","school bag|通学カバン","paintbrush|絵筆"]],
+["ポーズ・動作",1,2,true,["standing|立ち","sitting|座り","kneeling|膝立ち","lying|寝そべり","on back|仰向け","on stomach|うつ伏せ","crossed legs|足組み","arms up|両手を上げる","arms behind back|後ろ手","arms behind head|頭の後ろで手を組む","hand on hip|腰に手","hand on own face|頬に手","hands on own cheeks|両手を頬に","hand up|片手を上げる","waving|手を振る","peace sign|ピース","outstretched hand|手を伸ばす","reaching towards viewer|こちらへ手を伸ばす","crossed arms|腕組み","hugging own knees|体育座り","wariza|女の子座り","seiza|正座","squatting|しゃがみ","leaning forward|前傾","walking|歩き","running|走り","jumping|ジャンプ","dancing|踊り","stretching|伸び","head tilt|首をかしげる","hand in own hair|髪に手","adjusting eyewear|眼鏡を直す","salute|敬礼","thumbs up|サムズアップ","finger to mouth|口元に指","covering mouth|口元を隠す","arm support|片手をつく","floating|浮遊"]],
+["背景・場所",1,1,true,["simple background|シンプル背景","white background|白背景","gradient background|グラデ背景","transparent background|透過","outdoors|屋外","indoors|屋内","classroom|教室","school hallway|学校の廊下","bedroom|寝室","kitchen|キッチン","cafe|カフェ","library|図書館","city|街","cityscape|街並み","street|通り","alley|路地","rooftop|屋上","forest|森","bamboo forest|竹林","flower field|花畑","beach|浜辺","ocean|海","underwater|水中","sky|空","mountain|山","garden|庭","park|公園","shrine|神社","torii|鳥居","temple|寺","ruins|遺跡","castle|城","laboratory|研究室","train interior|電車内","bus stop|バス停","convenience store|コンビニ","festival|祭り","snow|雪景色","desert|砂漠","space|宇宙","starry sky|星空","fantasy|ファンタジー","cyberpunk|サイバーパンク"]],
+["時間・光",0,1,true,["day|昼","night|夜","sunset|夕暮れ","sunrise|日の出","evening|夕方","dusk|黄昏","twilight|薄暮","backlighting|逆光","dramatic shadow|強い陰影","dappled sunlight|木漏れ日","light rays|光条","sunbeam|日差し","sunlight|陽光","moonlight|月光","neon lights|ネオン","lens flare|レンズフレア","bloom|ブルーム","spotlight|スポットライト","silhouette|シルエット","glowing|発光"]],
+["天候・エフェクト",0,2,true,["falling petals|舞う花びら","cherry blossoms|桜","petals|花びら","sparkle|きらめき","light particles|光の粒","bubbles|泡","falling feathers|羽根","wind|風","motion blur|モーションブラー","speed lines|集中線","water drop|水滴","splashing|水しぶき","fire|炎","lightning|雷","magic circle|魔法陣","aura|オーラ","glitch|グリッチ","chromatic aberration|色収差","film grain|フィルムグレイン","confetti|紙吹雪","snowing|降雪","snowflakes|雪の結晶","falling leaves|落ち葉","autumn leaves|紅葉","rain|雨","smoke|煙","steam|湯気","butterfly|蝶"]],
+["色調",0,1,false,["pastel colors|パステル","vivid colors|ビビッド","monochrome|モノクロ","greyscale|グレースケール","sepia|セピア","limited palette|限定色","muted color|くすみ色","colorful|カラフル","high contrast|ハイコントラスト","dark|暗め"]],
+["画風・タッチ",0,1,true,["anime coloring|アニメ塗り","flat color|フラット塗り","cel shading|セル塗り","watercolor (medium)|水彩","sketch|ラフ","lineart|線画","thick outlines|太線","retro artstyle|レトロ画風","1990s (style)|90年代風","1980s (style)|80年代風","impasto|厚塗り","ink wash painting|水墨画","ukiyo-e|浮世絵","chibi|ちび","realistic|リアル寄り","official art|公式絵風","concept art|コンセプトアート","minimalism|ミニマル","art nouveau|アールヌーヴォー","faux traditional media|アナログ風","marker (medium)|マーカー","colored pencil (medium)|色鉛筆","oil painting (medium)|油彩","pixel art|ドット絵"]]
+];
+
+const DEFAULT_SETTINGS={
+  prefix:"masterpiece, best quality, very aesthetic, absurdres",
+  suffix:"",
+  negative:"lowres, worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digits, jpeg artifacts, signature, watermark, username, blurry, text",
+  escapeParens:true, underscore:false, batch:5
+};
+
+function buildDefaults(){
+  const groups=DEF.map(([name,min,max,on,tags])=>({
+    id:uid(),name,min,max,on,req:false,
+    tags:tags.map(s=>{const[t,ja]=s.split("|");return{id:uid(),tag:t.trim(),ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false};})
+  }));
+  const gid=n=>(groups.find(g=>g.name===n)||{}).id;
+  const tid=(gn,tn)=>{const g=groups.find(x=>x.name===gn);if(!g)return null;const t=g.tags.find(x=>x.tag===tn);return t?t.id:null;};
+  const raw=[
+    {id:uid(),type:"exclude",dir:"both",a:{k:"tag",id:tid("目の形","closed eyes")},
+     targets:[{k:"group",id:gid("瞳の色")},{k:"group",id:gid("瞳孔・光")},{k:"group",id:gid("視線")}]},
+    {id:uid(),type:"exclude",dir:"a2b",a:{k:"tag",id:tid("構図・カメラ","from behind")},
+     targets:[{k:"group",id:gid("表情")},{k:"group",id:gid("目の形")},{k:"group",id:gid("視線")},{k:"group",id:gid("瞳の色")},{k:"group",id:gid("顔の特徴・ほくろ")}]},
+    {id:uid(),type:"link",dir:"a2b",a:{k:"tag",id:tid("種族・獣要素","cat ears")},
+     targets:[{k:"tag",id:tid("種族・獣要素","cat tail")}]}
+  ];
+  return {groups,rules:raw.filter(r=>r.a.id&&r.targets.every(t=>t.id)),settings:{...DEFAULT_SETTINGS}};
+}
+
+/* ══════════ 抽選エンジン ══════════ */
+function weightedIndex(arr){
+  const tot=arr.reduce((s,t)=>s+Math.max(0,Number(t.w)||0),0);
+  if(tot<=0) return Math.floor(Math.random()*arr.length);
+  let r=Math.random()*tot;
+  for(let i=0;i<arr.length;i++){ r-=Math.max(0,Number(arr[i].w)||0); if(r<0) return i; }
+  return arr.length-1;
+}
+function rollGroup(g,blocked,minOv){
+  const lo=minOv!=null?Math.max(minOv,Math.min(g.min,g.max)):Math.min(g.min,g.max);
+  const hi=Math.max(lo,Math.max(g.min,g.max));
+  const n=randInt(lo,hi);
+  if(n<=0) return [];
+  const avail=g.tags.filter(t=>t.on&&!t.fix&&!blocked.has(t.id));
+  const out=[];
+  for(let i=0;i<n&&avail.length;i++){ const k=weightedIndex(avail); out.push(avail[k]); avail.splice(k,1); }
+  return out;
+}
+function makeBlocker(D){
+  const bT=new Set(),bG=new Set();
+  const byId=new Map(D.groups.map(g=>[g.id,g]));
+  const block=ref=>{
+    if(!ref) return;
+    if(ref.k==="tag") bT.add(ref.id);
+    else { bG.add(ref.id); const g=byId.get(ref.id); if(g) g.tags.forEach(t=>bT.add(t.id)); }
+  };
+  const fire=hit=>{
+    for(const r of D.rules){
+      if(r.type!=="exclude") continue;
+      if(r.a.k===hit.k&&r.a.id===hit.id) r.targets.forEach(block);
+      if(r.dir==="both"&&r.targets.some(t=>t.k===hit.k&&t.id===hit.id)) block(r.a);
+    }
+  };
+  return {bT,bG,fire};
+}
+function generate(D,locks,prev){
+  locks=locks||{};
+  const {bT,bG,fire}=makeBlocker(D);
+  const byGroup={}, done=new Set();
+  const emit=(g,picked)=>{
+    byGroup[g.id]=[...(byGroup[g.id]||[]),...picked];
+    picked.forEach(t=>fire({k:"tag",id:t.id}));
+    if(picked.length) fire({k:"group",id:g.id});
+  };
+  // 0) 固定タグを先に確定（排他もこれが勝つ）
+  for(const g of D.groups){
+    if(!g.on) continue;
+    const fx=g.tags.filter(t=>t.on&&t.fix);
+    if(fx.length) emit(g,fx);
+  }
+  // 1) ロック据え置き
+  for(const g of D.groups){
+    if(!g.on||!locks[g.id]||!prev||!prev.byGroup[g.id]) continue;
+    const kept=prev.byGroup[g.id].filter(t=>g.tags.some(x=>x.id===t.id));
+    byGroup[g.id]=[]; done.add(g.id); emit(g,kept);
+  }
+  // 2) 必須 → 通常
+  const order=[...D.groups.filter(g=>g.req),...D.groups.filter(g=>!g.req)];
+  for(const g of order){
+    if(!g.on||done.has(g.id)) continue;
+    done.add(g.id);
+    if(!g.req&&bG.has(g.id)){ byGroup[g.id]=byGroup[g.id]||[]; continue; }
+    emit(g,rollGroup(g,bT,g.req?Math.max(1,g.min):null));
+  }
+  // 3) 連動
+  for(let p=0;p<6;p++){
+    let ch=false;
+    const hasT=new Set(Object.values(byGroup).flat().map(t=>t.id));
+    const hasG=new Set(Object.entries(byGroup).filter(([,v])=>v.length).map(([k])=>k));
+    for(const r of D.rules){
+      if(r.type!=="link") continue;
+      const fired=r.a.k==="tag"?hasT.has(r.a.id):hasG.has(r.a.id);
+      if(!fired) continue;
+      for(const tg of r.targets){
+        if(tg.k==="tag"){
+          if(hasT.has(tg.id)||bT.has(tg.id)) continue;
+          const g=D.groups.find(x=>x.tags.some(t=>t.id===tg.id));
+          if(!g||bG.has(g.id)) continue;
+          byGroup[g.id]=[...(byGroup[g.id]||[]),g.tags.find(x=>x.id===tg.id)]; ch=true;
+        }else{
+          const g=D.groups.find(x=>x.id===tg.id);
+          if(!g||bG.has(g.id)||(byGroup[g.id]||[]).length) continue;
+          const pk=rollGroup(g,bT,Math.max(1,g.min));
+          if(pk.length){ byGroup[g.id]=pk; ch=true; }
+        }
+      }
+    }
+    if(!ch) break;
+  }
+  return {byGroup};
+}
+function rerollOne(D,res,gid){
+  const g=D.groups.find(x=>x.id===gid);
+  if(!g) return res;
+  const {bT,bG,fire}=makeBlocker(D);
+  for(const og of D.groups){
+    if(og.id===gid) continue;
+    const arr=res.byGroup[og.id]||[];
+    arr.forEach(t=>fire({k:"tag",id:t.id}));
+    if(arr.length) fire({k:"group",id:og.id});
+  }
+  const fixed=g.tags.filter(t=>t.on&&t.fix);
+  const picked=(!g.req&&bG.has(gid))?[]:rollGroup(g,bT,g.req?Math.max(1,g.min):null);
+  return {byGroup:{...res.byGroup,[gid]:[...fixed,...picked]}};
+}
+function fmtTag(t,s){
+  const parts=String(t.tag).split(",").map(x=>x.trim()).filter(Boolean).map(x=>{
+    let y=x;
+    if(s.underscore) y=y.replace(/\s+/g,"_");
+    if(s.escapeParens) y=y.replace(/([()])/g,"\\$1");
+    return y;
+  });
+  let out=parts.join(", ");
+  const e=Number(t.emph)||1;
+  if(e!==1) out="("+out+":"+(Math.round(e*100)/100)+")";
+  return out;
+}
+function toSegs(D,res){
+  const s=D.settings, segs=[];
+  if(s.prefix.trim()) segs.push({t:s.prefix.trim(),f:true});
+  if(res) for(const g of D.groups) (res.byGroup[g.id]||[]).forEach(t=>segs.push({t:fmtTag(t,s),f:!!t.fix}));
+  if(s.suffix.trim()) segs.push({t:s.suffix.trim(),f:true});
+  return segs;
+}
+function toPrompt(D,res){ return toSegs(D,res).map(x=>x.t).join(", "); }
+
+/* ══════════ danbooru 取込 ══════════ */
+const CATS=[["0","general / 一般（絵の内容）"],["4","character / キャラ名"],["3","copyright / 作品名"],["1","artist / 絵師"],["5","meta / メタ情報"]];
+const DEFAULT_BLOCK="translated, translation, commentary, request, artist name, character name, copyright name, signature, watermark, username, web address, dated, bad id, resized, revision, sample, third-party edit, alternate";
+const dbURL=(c,p)=>"https://danbooru.donmai.us/tags.json?search[category]="+c+"&search[order]=count&search[hide_empty]=yes&limit=1000&page="+p;
+const postURL=id=>"https://danbooru.donmai.us/posts/"+id+".json";
+const logWeight=c=>c>0?Math.max(.1,Math.round((Math.log10(c)-2)*10)/10):.1;
+
+function parseTagPayload(txt){
+  const t=String(txt).trim();
+  if(!t) return [];
+  if(t[0]==="["||t[0]==="{"){
+    let j=JSON.parse(t); if(!Array.isArray(j)) j=[j];
+    return j.filter(x=>x&&x.name).map(x=>({name:String(x.name),count:Number(x.post_count)||0,cat:Number(x.category)||0,dep:!!x.is_deprecated}));
+  }
+  return t.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^([^\s,|]+)(?:[\s,|]+(\d+))?/);
+    return m?{name:m[1],count:Number(m[2])||0,cat:0,dep:false}:null;
+  }).filter(Boolean);
+}
+function planImport(pool,D,o){
+  const have=new Set(D.groups.flatMap(g=>g.tags.map(t=>norm(t.tag))));
+  const blocks=o.block.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const keep=[], skip={dep:0,low:0,block:0,dupe:0}, seen=new Set();
+  for(const r of pool){
+    const name=r.name.replace(/_/g," ").trim(), key=norm(name);
+    if(r.dep){skip.dep++;continue;}
+    if(r.count<o.minCount){skip.low++;continue;}
+    if(blocks.some(b=>key.includes(b))){skip.block++;continue;}
+    if(have.has(key)||seen.has(key)){skip.dupe++;continue;}
+    seen.add(key);
+    keep.push({id:uid(),tag:name,ja:"",w:o.useWeight?logWeight(r.count):1,emph:1,on:true,fix:false,pc:r.count});
+  }
+  return {keep,skip};
+}
+
+/* ══════════ 画像/プロンプト → 型 ══════════ */
+const extractPostId=s=>{
+  const m=String(s).match(/posts\/(\d+)/)||String(s).match(/^\s*(\d{2,9})\s*$/);
+  return m?m[1]:null;
+};
+const cleanToken=s=>String(s).replace(/\\([()])/g,"$1").replace(/:\s*[\d.]+\s*\)?\s*$/,"")
+  .replace(/^[\s(]+|[\s)]+$/g,"").replace(/_/g," ").trim();
+function postToTags(j){
+  const sp=s=>String(s||"").split(/\s+/).map(cleanToken).filter(Boolean);
+  return {id:j.id||null,general:sp(j.tag_string_general||j.tag_string),character:sp(j.tag_string_character),
+          copyright:sp(j.tag_string_copyright),artist:sp(j.tag_string_artist)};
+}
+function parseAnySource(txt){
+  const t=String(txt).trim();
+  if(!t) return null;
+  if(t[0]==="{"||t[0]==="["){
+    let j=JSON.parse(t); if(Array.isArray(j)) j=j[0];
+    if(j&&(j.tag_string_general||j.tag_string)) return postToTags(j);
+    throw new Error("not a post");
+  }
+  const parts=t.includes(",")?t.split(/[,\n]/):t.split(/[\s\n]+/);
+  return {id:null,general:parts.map(cleanToken).filter(Boolean),character:[],copyright:[],artist:[]};
+}
+const tagMatches=(t,set)=>t.tag.split(",").map(x=>norm(x)).filter(Boolean).every(p=>set.has(p));
+function buildRecipe(names,D){
+  const set=new Set(names.map(norm).filter(Boolean));
+  const byGroup={}, used=new Set();
+  for(const g of D.groups){
+    const hit=g.tags.filter(t=>tagMatches(t,set));
+    if(hit.length){ byGroup[g.id]=hit; hit.forEach(t=>t.tag.split(",").forEach(p=>used.add(norm(p)))); }
+  }
+  return {byGroup,unknown:[...set].filter(n=>!used.has(n))};
+}
+/* 自動振り分け：既存グループの語彙から推測 */
+const STOP=new Set(["a","an","the","of","on","in","with","and","to","own","one","two","up","out","over"]);
+const wordsOf=s=>norm(s).split(/[\s,()]+/).filter(w=>w&&!STOP.has(w));
+function buildWordIndex(D){
+  const any=new Map(), last=new Map(), size=new Map();
+  const bump=(m,w,gid)=>{ if(!m.has(w)) m.set(w,new Map()); const g=m.get(w); g.set(gid,(g.get(gid)||0)+1); };
+  for(const g of D.groups){
+    size.set(g.id,Math.max(1,g.tags.length));
+    for(const t of g.tags){
+      const ws=wordsOf(t.tag);
+      if(!ws.length) continue;
+      ws.forEach(w=>bump(any,w,g.id));
+      bump(last,ws[ws.length-1],g.id);
+    }
+  }
+  return {any,last,size};
+}
+function guessGroup(name,idx){
+  const ws=wordsOf(name);
+  if(!ws.length) return null;
+  const sc=new Map();
+  const add=(gid,v)=>sc.set(gid,(sc.get(gid)||0)+v/Math.sqrt(idx.size.get(gid)||1));
+  const head=idx.last.get(ws[ws.length-1]);
+  if(head) for(const [gid,n] of head) add(gid,3*Math.min(n,8));
+  for(const w of ws){
+    const m=idx.any.get(w);
+    if(!m) continue;
+    const spread=[...m.values()].reduce((a,b)=>a+b,0);
+    const inf=1/Math.log2(2+spread);
+    for(const [gid,n] of m) add(gid,inf*Math.min(n,8));
+  }
+  let best=null,bv=0;
+  for(const [gid,v] of sc) if(v>bv){ bv=v; best=gid; }
+  return bv>.35?best:null;
+}
+
+/* ══════════ 状態 ══════════ */
+let D=null;
+const V={tab:"gen",result:null,locks:{},batchOut:[],toast:"",openG:{},limitG:{},q:"",
+  addTo:null,bulk:"",bulkComma:true,impText:"",fresh:false,dirty:false,fixOpen:false,
+  impMode:"post",dbCat:"0",dbPages:5,dbPool:[],dbPaste:"",dbMin:1000,dbBlock:DEFAULT_BLOCK,
+  dbWeight:true,dbTarget:"__new",dbNewName:"danbooru 取込",dbBusy:"",dbErr:"",
+  pSrc:"",pBusy:"",pErr:"",pURL:"",pTags:null,pAuto:true,pPick:{},pNewName:"参考画像から",
+  modal:null};
+
+let saveTimer=null;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveRaw(JSON.stringify(D)),300);
+}
+function mutate(fn){ fn(); V.dirty=true; persist(); render(); }
+
+let toastTimer=null;
+function say(m){
+  V.toast=m; render();
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ V.toast=""; render(); },1800);
+}
+function copy(text){
+  if(!text) return;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>say("コピーしました")).catch(()=>fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text; ta.style.position="fixed"; ta.style.top="-999px";
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+    say("コピーしました");
+  }catch(e){ say("コピー不可。長押しで選択して"); }
+}
+
+/* ══════════ 描画 ══════════ */
+const sw=(on,act,d)=>`<button class="sw${on?" on":""}" data-act="${act}"${d||""}><i></i></button>`;
+const numOpts=v=>[0,1,2,3,4,5,6,7,8].map(n=>`<option value="${n}"${n==v?" selected":""}>${n}</option>`).join("");
+const refLabel=ref=>{
+  if(!ref||!ref.id) return "（不明）";
+  if(ref.k==="group"){ const g=D.groups.find(x=>x.id===ref.id); return g?"［"+g.name+"］":"［削除済み］"; }
+  for(const g of D.groups){ const t=g.tags.find(x=>x.id===ref.id); if(t) return t.tag; }
+  return "（削除済み）";
+};
+const stats=()=>({g:D.groups.length,t:D.groups.reduce((s,g)=>s+g.tags.length,0),r:D.rules.length});
+const prompt=()=>toPrompt(D,V.result);
+function outHTML(){
+  const segs=toSegs(D,V.result);
+  if(!segs.length) return '<span style="color:var(--dim2)">確定枠に何か書くか、下の「抽選する」を押すとここに出ます。</span>';
+  return segs.map(x=>`<span style="color:${x.f?"var(--brass)":"var(--tag)"}">${esc(x.t)}</span>`)
+             .join('<span style="color:var(--dim2)">, </span>');
+}
+function refreshOut(){
+  const el=document.querySelector(".out.prompt");
+  if(el) el.innerHTML=outHTML();
+  const sv=$("save"); if(sv) sv.className="save"+(V.dirty?" on":"");
+}
+
+const TABS=[["gen","生成"],["groups","グループ"],["rules","ルール"],["import","取込"],["set","設定"]];
+
+function viewGen(){
+  let h="";
+  if(V.fresh){
+    h+=`<div class="card hi"><div class="pad col">
+      <div class="row"><b style="font-size:13px">⚠︎ 初期状態で起動しました</b><div class="sp"></div>
+        <button data-act="dismissFresh" style="color:var(--dim2)">✕</button></div>
+      <div class="muted">前のバックアップJSONがあるなら、ここに貼れば丸ごと戻ります。<br>次からは右上の「保存」でコピーして、メモアプリにでも残しといて。</div>
+      <textarea rows="2" data-inp="impText" placeholder="バックアップJSONを貼る">${esc(V.impText)}</textarea>
+      <button class="btn lever full" data-act="restore"${V.impText.trim()?"":" disabled"}>復元する</button>
+    </div></div>`;
+  }
+  const p=prompt();
+  h+=`<div class="card" style="border-color:var(--brass)"><div class="pad">
+    <div class="row" style="margin-bottom:6px">
+      <span style="flex:none">📌</span>
+      <div class="sp"><b style="font-size:13px;color:var(--brass)">確定枠</b>
+        <div class="mini">抽選しない。何回ガチャっても、かならずこの文字列が入る。</div></div>
+      <button class="btn" data-act="toggleFixBox" style="padding:4px 8px;font-size:11px">${V.fixOpen?"閉じる":"ひらく"}</button>
+    </div>
+    ${V.fixOpen?`
+      <div class="eb" style="margin-top:10px">先頭に入れる</div>
+      <textarea rows="2" data-inp="prefix" data-k="pfx" placeholder="masterpiece, best quality, ...">${esc(D.settings.prefix)}</textarea>
+      <div class="eb" style="margin-top:10px">末尾に入れる</div>
+      <textarea rows="1" data-inp="suffix" data-k="sfx" placeholder="（任意）">${esc(D.settings.suffix)}</textarea>
+      <div class="mini" style="margin-top:8px">単語ごとに📌を付けても同じことができます（グループタブ → 単語をタップ → 固定）。</div>
+    `:`<div class="mono" style="font-size:11px;color:var(--brass);word-break:break-word;padding:4px 0">${D.settings.prefix.trim()?esc(D.settings.prefix):'<span style="color:var(--dim2)">（空）</span>'}</div>`}
+  </div></div>
+
+  <div class="card"><div class="pad">
+    <div class="row" style="margin-bottom:8px"><div class="eb" style="margin:0">PROMPT</div><div class="sp"></div>
+      <button class="btn" data-act="copyPrompt" style="padding:4px 8px;font-size:11px;color:${p?"var(--brass)":"var(--dim2)"};border-color:${p?"var(--brass)":"var(--rule)"}">コピー</button></div>
+    <div class="out prompt">${outHTML()}</div>
+    <div class="mini" style="margin-top:8px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ</div>
+  </div></div>`;
+
+  for(const g of D.groups){
+    if(!g.on){
+      h+=`<div class="goff"><span class="sp">${esc(g.name)}</span><span class="mono" style="font-size:10px">OFF</span>${sw(false,"gOn",` data-id="${g.id}"`)}</div>`;
+      continue;
+    }
+    const picks=(V.result&&V.result.byGroup[g.id])||[];
+    const locked=!!V.locks[g.id];
+    h+=`<div class="gcard"><div class="ghead"${picks.length?' style="border-bottom:1px solid var(--rule)"':""}>
+      ${g.req?'<span style="font-size:11px;flex:none">📌</span>':""}
+      <span class="gname">${esc(g.name)}</span>
+      <select data-sel="gmin" data-id="${g.id}">${numOpts(g.min)}</select>
+      <span style="color:var(--dim2);font-size:11px">〜</span>
+      <select data-sel="gmax" data-id="${g.id}">${numOpts(g.max)}</select>
+      <button class="ic${locked?" on":""}" data-act="lock" data-id="${g.id}">${locked?"🔒":"🔓"}</button>
+      <button class="ic solid" data-act="reroll" data-id="${g.id}">🎲</button>
+      ${sw(true,"gOn",` data-id="${g.id}"`)}
+    </div>`;
+    if(picks.length){
+      h+=`<div class="chips" style="padding:9px 10px">`+picks.map(t=>
+        `<span class="chip${t.fix?" fix":""}">${t.fix?'<span style="font-size:9px">📌</span>':""}${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}<button class="x" data-act="dropTag" data-id="${g.id}" data-tid="${t.id}">✕</button></span>`
+      ).join("")+`</div>`;
+    } else if(V.result){
+      h+=`<div class="mini" style="padding:8px 12px">なし${g.max>0?"（排他ルールで止まったか、0個抽選）":""}</div>`;
+    }
+    h+=`</div>`;
+  }
+
+  h+=`<div class="card"><div class="pad">
+    <div class="row"><b class="sp" style="font-size:13px">まとめて生成</b>
+      <input type="number" min="1" max="30" value="${V.settingsBatch||D.settings.batch}" data-inp="batch">
+      <button class="btn solid" data-act="batch">生成</button></div>`;
+  if(V.batchOut.length){
+    h+=`<div class="col" style="margin-top:12px">
+      <button class="btn full" data-act="copyBatch">すべてコピー</button>`+
+      V.batchOut.map((p,i)=>`<div class="row" style="background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;align-items:flex-start">
+        <span class="mono" style="font-size:10px;color:var(--brass);flex:none">${String(i+1).padStart(2,"0")}</span>
+        <span class="mono sp" style="font-size:11px;line-height:1.7;color:var(--tag);word-break:break-word;-webkit-user-select:text;user-select:text">${esc(p)}</span>
+        <button data-act="copyOne" data-i="${i}" style="color:var(--dim2);flex:none">⧉</button></div>`).join("")+`</div>`;
+  }
+  h+=`</div></div>`;
+  return h;
+}
+
+function viewGroups(){
+  const lq=V.q.trim().toLowerCase();
+  let h=`<div class="row" style="background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:0 12px">
+    <span style="color:var(--dim2)">🔍</span>
+    <input type="text" data-inp="q" data-k="q" placeholder="単語を検索（英語・日本語）" value="${esc(V.q)}"
+      style="background:none;border:0;padding:10px 0">
+    ${V.q?'<button data-act="clearQ" style="color:var(--dim2)">✕</button>':""}
+  </div>`;
+
+  let budget=lq?400:Infinity;
+  for(let i=0;i<D.groups.length;i++){
+    const g=D.groups[i];
+    const hits=lq?g.tags.filter(t=>t.tag.toLowerCase().includes(lq)||(t.ja||"").toLowerCase().includes(lq)):g.tags;
+    if(lq&&!hits.length) continue;
+    const open=lq?true:!!V.openG[g.id];
+    const cap=V.limitG[g.id]||120;
+    let shown=[];
+    if(open){ shown=hits.slice(0,Math.min(cap,budget)); budget-=shown.length; }
+
+    h+=`<div class="gcard"><div class="ghead">
+      <button data-act="toggleG" data-id="${g.id}" style="color:var(--dim2);flex:none">${open?"▾":"▸"}</button>
+      <span class="gname"><input type="text" data-inp="gname" data-id="${g.id}" data-k="gn${g.id}" value="${esc(g.name)}"></span>
+      <span class="mono" style="font-size:10px;color:var(--tag);flex:none">${hits.length}${lq?"/"+g.tags.length:""}</span>
+      <button data-act="moveUp" data-i="${i}" style="color:var(--dim2);flex:none">▲</button>
+      <button data-act="moveDn" data-i="${i}" style="color:var(--dim2);flex:none">▼</button>
+      ${sw(g.on,"gOn",` data-id="${g.id}"`)}
+    </div>`;
+
+    if(open){
+      h+=`<div style="padding:0 12px 12px;border-top:1px solid var(--rule)">
+        <div class="row" style="padding:10px 0;font-size:12px;color:var(--dim)">
+          <span>抽選数</span>
+          <select data-sel="gmin" data-id="${g.id}">${numOpts(g.min)}</select><span>〜</span>
+          <select data-sel="gmax" data-id="${g.id}">${numOpts(g.max)}</select><span>個</span>
+          <div class="sp"></div>
+          <button data-act="delG" data-id="${g.id}" style="color:var(--ng)">🗑</button>
+        </div>
+
+        <div class="row" style="background:var(--ink3);border-radius:8px;padding:8px 12px;margin-bottom:8px">
+          <span style="flex:none">📌</span>
+          <div class="sp">
+            <div style="font-size:12px;font-weight:700;color:${g.req?"var(--txt)":"var(--dim)"}">必須グループ</div>
+            <div class="mini">排他ルールで潰されず、最優先で必ず1個以上出す</div>
+          </div>
+          ${sw(!!g.req,"gReq",` data-id="${g.id}"`)}
+        </div>
+
+        <div class="row" style="gap:8px;margin-bottom:10px">
+          <button class="btn full" data-act="fixAll" data-id="${g.id}">📌 全部を固定に</button>
+          <button class="btn full" data-act="unfixAll" data-id="${g.id}">固定を解除</button>
+        </div>
+
+        <div class="chips">`+shown.map(t=>
+          `<button class="chip${t.fix?" fix":""}${t.on?"":" off"}" data-act="editTag" data-id="${g.id}" data-tid="${t.id}">${t.fix?'<span style="font-size:9px">📌</span>':""}${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}${(Number(t.w)||1)!==1?`<span class="ja" style="color:var(--brass)">×${t.w}</span>`:""}${(Number(t.emph)||1)!==1?`<span class="ja" style="color:var(--brass)">:${t.emph}</span>`:""}</button>`
+        ).join("")+`</div>`;
+
+      if(open&&hits.length>shown.length){
+        h+=`<button class="btn full" data-act="more" data-id="${g.id}" style="margin-top:8px">残り ${hits.length-shown.length} 語を表示</button>`;
+      }
+
+      if(V.addTo===g.id){
+        h+=`<div class="col" style="background:var(--ink);border:1px solid var(--rule2);border-radius:8px;padding:12px;margin-top:12px">
+          <div class="muted"><b style="color:var(--brass)">カンマ「,」区切り</b>でまとめて貼れます（改行でもOK）。<br>
+            <span class="mono" style="color:var(--tag)">tag|メモ</span> で日本語メモも付けられます。</div>
+          <textarea rows="4" data-inp="bulk" data-k="bulk" placeholder="long hair, twintails, blue eyes&#10;&#10;cat ears|猫耳, fox ears|狐耳">${esc(V.bulk)}</textarea>
+          <label class="row" style="font-size:12px;color:var(--dim)">
+            <button class="cb${V.bulkComma?" on":""}" data-act="bulkComma">${V.bulkComma?"✓":""}</button>カンマ「,」でも区切る</label>
+          <div class="row" style="gap:8px">
+            <button class="btn full" data-act="cancelAdd">やめる</button>
+            <button class="btn lever full" data-act="doAdd" data-id="${g.id}">＋ 追加</button>
+          </div>
+        </div>`;
+      } else {
+        h+=`<button class="btn full" data-act="openAdd" data-id="${g.id}" style="margin-top:12px">＋ 単語を追加</button>`;
+      }
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }
+  h+=`<button class="btn solid full" data-act="addGroup">＋ グループを追加</button>
+    <div class="mini" style="padding:0 4px">並び順が抽選の順番です。上のグループほど先に引かれ、排他ルールで優先されます。</div>`;
+  return h;
+}
+
+function viewRules(){
+  let h=`<div class="card"><div class="pad muted">
+    <b style="color:var(--ng)">排他</b> = これが出たら、あれは出さない。<br>
+    <b style="color:var(--link)">連動</b> = これが出たら、あれも一緒に出す。<br>
+    起点も対象も、<span class="mono" style="color:var(--tag)">単語</span> でも <b>［グループ］</b> でも指定できます。
+  </div></div>`;
+  if(!D.rules.length) h+=`<div class="ph">ルールはまだありません。<br>下のボタンから1つ作ってみてください。</div>`;
+  for(const r of D.rules){
+    const ex=r.type==="exclude";
+    h+=`<button class="rule-item ${ex?"ex":"lk"}" data-act="editRule" data-id="${r.id}">
+      <div class="row" style="margin-bottom:8px">
+        <span class="badge" style="color:${ex?"var(--ng)":"var(--link)"}">${ex?(r.dir==="both"?"排他 ⟷ 双方向":"排他 → 片方向"):"連動 →"}</span>
+        <div class="sp"></div><span style="color:var(--dim2)">✎</span>
+      </div>
+      <div class="chips">
+        <span class="tgt src${r.a.k==="group"?" g":""}">${esc(refLabel(r.a))}</span>
+        <span style="color:var(--dim2);font-size:12px;align-self:center">${ex?"が出たら ✕":"が出たら ＋"}</span>
+        ${r.targets.map(t=>`<span class="tgt ${ex?"ex":"lk"}${t.k==="group"?" g":""}">${esc(refLabel(t))}</span>`).join("")}
+      </div></button>`;
+  }
+  h+=`<button class="btn solid full" data-act="newRule">＋ ルールを追加</button>`;
+  return h;
+}
+
+function viewImport(){
+  let h=`<div class="row" style="gap:8px">
+    <button class="btn full ${V.impMode==="post"?"solid":""}" data-act="impMode" data-m="post">🪄 画像・プロンプト</button>
+    <button class="btn full ${V.impMode==="dict"?"solid":""}" data-act="impMode" data-m="dict">📚 タグ辞書</button>
+  </div>`;
+
+  if(V.impMode==="post"){
+    h+=`<div class="card"><div class="pad muted">
+      danbooru の<b style="color:var(--txt)">画像ページのURL</b>を入れると、その絵のタグを読んで<b style="color:var(--brass)">「型」</b>にします。
+      構図と光だけロックして中身をガチャる、みたいな使い方ができる。<br>プロンプト文字列をそのまま貼ってもOK。
+    </div></div>
+    <div class="card"><div class="pad col">
+      <div class="eb">URL / ID / プロンプト</div>
+      <textarea rows="3" data-inp="pSrc" data-k="pSrc" placeholder="https://danbooru.donmai.us/posts/1234567&#10;&#10;または&#10;1girl, long hair, twintails, blue eyes">${esc(V.pSrc)}</textarea>
+      <button class="btn lever full" data-act="loadPost"${(V.pBusy||!V.pSrc.trim())?" disabled":""}>🪄 ${V.pBusy||"読み込む"}</button>`;
+    if(V.pErr) h+=`<div class="err">${esc(V.pErr)}</div>`;
+    if(V.pErr&&V.pURL) h+=`<div class="row" style="gap:8px">
+      <button class="btn full" data-act="copyPURL">URLをコピー</button>
+      <a class="btn full" href="${esc(V.pURL)}" target="_blank" rel="noreferrer" style="text-decoration:none">JSONを開く ↗</a></div>`;
+    h+=`</div></div>`;
+
+    if(V.pTags){
+      const rec=buildRecipe(V.pTags.general,D);
+      const gs=D.groups.filter(g=>rec.byGroup[g.id]&&rec.byGroup[g.id].length);
+      h+=`<div class="card hi"><div class="pad col">
+        <div class="row"><b class="sp" style="font-size:13px">読み取り結果</b>
+          <span class="mono" style="font-size:11px;color:var(--tag)">${V.pTags.general.length} tags</span></div>`;
+      if(gs.length){
+        h+=gs.map(g=>`<div style="background:var(--ink);border-radius:8px;padding:8px 10px">
+          <div class="mini" style="font-weight:700;margin-bottom:4px">${esc(g.name)}</div>
+          <div class="chips">${rec.byGroup[g.id].map(t=>`<span class="chip">${esc(t.tag)}</span>`).join("")}</div></div>`).join("");
+      } else h+=`<div class="mini">既存グループに一致した単語はありませんでした。</div>`;
+      h+=`<button class="btn lever full" data-act="applyRecipe"${gs.length?"":" disabled"}>✨ 型として生成タブへ</button>
+        <div class="mini">一致したグループは自動でロックされます。生成タブで要らんロックだけ外して「抽選する」。</div>
+      </div></div>`;
+
+      const meta=[...V.pTags.character,...V.pTags.copyright,...V.pTags.artist];
+      if(meta.length) h+=`<div class="card"><div class="pad">
+        <div class="eb">キャラ / 作品 / 絵師（型には入れてません）</div>
+        <div class="chips">${meta.map(n=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div></div>`;
+
+      if(rec.unknown.length){
+        const selN=Object.values(V.pPick).filter(v=>v.on).length;
+        h+=`<div class="card"><div class="pad col">
+          <div class="row"><b class="sp" style="font-size:13px">ライブラリに無い単語</b>
+            <span class="mono" style="font-size:11px;color:var(--brass)">${selN} / ${rec.unknown.length}</span></div>
+          <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+            <div class="sp"><div style="font-size:12px;font-weight:700">それっぽい項目に自動で振り分け</div>
+              <div class="mini">既存グループの語彙から推測。手で直せます</div></div>
+            ${sw(V.pAuto,"pAuto")}
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn full" data-act="pickAll" data-v="1">全部ON</button>
+            <button class="btn full" data-act="pickAll" data-v="0">全部OFF</button>
+          </div>
+          <div class="col" style="gap:6px">`+
+          rec.unknown.slice(0,40).map(n=>{
+            const v=V.pPick[n]||{on:true,gid:"__new"};
+            const gname=v.gid==="__new"?"＋新規":((D.groups.find(g=>g.id===v.gid)||{}).name||"＋新規");
+            return `<div class="uk${v.on?"":" off"}">
+              <button class="cb${v.on?" on":""}" data-act="ukToggle" data-n="${esc(n)}">${v.on?"✓":""}</button>
+              <span class="nm">${esc(n)}</span>
+              <button class="to" data-act="ukPick" data-n="${esc(n)}">${esc(gname)} ▾</button></div>`;
+          }).join("")+
+          (rec.unknown.length>40?`<div class="mini">… 他 ${rec.unknown.length-40} 語（追加すると続きが出ます）</div>`:"")+
+          `</div>
+          <div><div class="eb">「＋新規」の行き先グループ名</div>
+            <input type="text" data-inp="pNewName" data-k="pnn" value="${esc(V.pNewName)}"></div>
+          <button class="btn lever full" data-act="addSelected"${selN?"":" disabled"}>＋ ${selN} 語を追加</button>
+        </div></div>`;
+      }
+    }
+    return h;
+  }
+
+  /* dict mode */
+  h+=`<div class="card"><div class="pad muted">
+    danbooru の <span class="mono" style="color:var(--tag)">tags.json</span> を読み込んで、単語を一気に増やせます。<br>
+    <b style="color:var(--brass)">ポスト数が多い順</b>に返るので、上位を取れば「モデルがよく知ってるタグ」だけが入ります。
+  </div></div>
+  <div class="card"><div class="pad col">
+    <div class="row"><span class="mono" style="font-size:11px;color:var(--brass);font-weight:700">01</span><b style="font-size:13px">danbooru から取ってくる</b></div>
+    <div><div class="eb">カテゴリ</div>
+      <select data-sel="dbCat" style="width:100%">${CATS.map(([v,l])=>`<option value="${v}"${V.dbCat===v?" selected":""}>${l}</option>`).join("")}</select></div>
+    <div class="row"><span style="font-size:12px;color:var(--dim)">取得ページ数</span>
+      <input type="number" min="1" max="20" value="${V.dbPages}" data-inp="dbPages">
+      <span class="mini">× 1000語 = 上位 ${V.dbPages*1000} 語</span></div>
+    <button class="btn lever full" data-act="dbFetch"${V.dbBusy?" disabled":""}>⇩ ${V.dbBusy||"直接とりに行く"}</button>`;
+  if(V.dbErr) h+=`<div class="err">${esc(V.dbErr)}</div>`;
+  h+=`<div style="height:1px;background:var(--rule)"></div>
+    <div class="eb">手動でやる場合のURL</div>
+    <div class="out" style="min-height:0;font-size:10.5px">${esc(dbURL(V.dbCat,1))}</div>
+    <div class="row" style="gap:8px">
+      <button class="btn full" data-act="copyDbURL">URLをコピー</button>
+      <a class="btn full" href="${esc(dbURL(V.dbCat,1))}" target="_blank" rel="noreferrer" style="text-decoration:none">開く ↗</a>
+    </div>
+    <div class="mini">開いたら全選択コピー → 下に貼り付け。<span class="mono">page=2, 3…</span> と変えれば続きが取れます。</div>
+    <textarea rows="3" data-inp="dbPaste" data-k="dbp" placeholder='[{"name":"long_hair","post_count":1234567,"category":0}, ...]'>${esc(V.dbPaste)}</textarea>
+    <button class="btn solid full" data-act="dbParse"${V.dbPaste.trim()?"":" disabled"}>⇧ 貼り付けたJSONを読む</button>
+  </div></div>`;
+
+  const has=V.dbPool.length;
+  h+=`<div class="card${has?" hi":""}"><div class="pad col">
+    <div class="row"><span class="mono" style="font-size:11px;color:var(--brass);font-weight:700">02</span>
+      <b class="sp" style="font-size:13px">ふるいにかける</b>
+      <span class="mono" style="font-size:11px;color:${has?"var(--tag)":"var(--dim2)"}">取得 ${has} 語</span></div>`;
+  if(!has){ h+=`<div class="ph">まだ何も取ってきてません</div></div></div>`; return h; }
+
+  const plan=planImport(V.dbPool,D,{minCount:V.dbMin,block:V.dbBlock,useWeight:V.dbWeight});
+  h+=`<div class="row"><span style="font-size:12px;color:var(--dim)">最小ポスト数</span>
+      <input type="number" min="0" step="100" value="${V.dbMin}" data-inp="dbMin" style="width:92px">
+      <span class="mini">以上だけ</span></div>
+    <div><div class="eb">除外ワード（部分一致・カンマ区切り）</div>
+      <textarea rows="2" data-inp="dbBlock" data-k="dbb">${esc(V.dbBlock)}</textarea>
+      <div class="mini" style="margin-top:4px">既定はプロンプトに要らんメタ語。要らん単語はここに足せば弾けます。</div></div>
+    <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+      <div class="sp"><div style="font-size:12px;font-weight:700">ポスト数を抽選ウェイトに</div>
+        <div class="mini mono">1,000→×1.0 / 10,000→×2.0 / 100,000→×3.0</div></div>
+      ${sw(V.dbWeight,"dbWeight")}
+    </div>
+    <div style="background:var(--ink);border:1px solid var(--rule2);border-radius:8px;padding:12px">
+      <div style="margin-bottom:6px"><span class="mono" style="font-size:22px;font-weight:800;color:var(--brass)">${plan.keep.length}</span>
+        <span style="font-size:12px;color:var(--dim)"> 語を追加します</span></div>
+      <div class="mini mono">除外: 重複 ${plan.skip.dupe} / ポスト数不足 ${plan.skip.low} / 除外ワード ${plan.skip.block} / 廃止 ${plan.skip.dep}</div>
+      ${plan.keep.length?`<div class="chips" style="margin-top:8px">${plan.keep.slice(0,24).map(t=>`<span class="chip" style="font-size:10.5px">${esc(t.tag)}${V.dbWeight?`<span class="ja" style="color:var(--brass)">×${t.w}</span>`:""}</span>`).join("")}${plan.keep.length>24?`<span class="mini">… 他 ${plan.keep.length-24} 語</span>`:""}</div>`:""}
+    </div>
+    <div><div class="eb">入れ先グループ</div>
+      <select data-sel="dbTarget" style="width:100%">
+        <option value="__new"${V.dbTarget==="__new"?" selected":""}>＋ 新しいグループを作る</option>
+        ${D.groups.map(g=>`<option value="${g.id}"${V.dbTarget===g.id?" selected":""}>${esc(g.name)}（${g.tags.length}語）</option>`).join("")}
+      </select>
+      ${V.dbTarget==="__new"?`<input type="text" data-inp="dbNewName" data-k="dbn" value="${esc(V.dbNewName)}" style="margin-top:8px">`:""}
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="btn" data-act="dbClear">捨てる</button>
+      <button class="btn lever full" data-act="dbCommit"${plan.keep.length?"":" disabled"}>＋ ${plan.keep.length} 語を追加</button>
+    </div>
+  </div></div>
+  <div class="warn"><b style="color:var(--txt)">入れすぎ注意。</b> 1万語を1グループに突っ込んで無作為に引くと、脈絡のないプロンプトしか出ません。
+    取込先の抽選数は <span class="mono" style="color:var(--brass)">0〜1個</span> にして「スパイス枠」として使うのがおすすめ。
+    キャラ名・作品名は必ず<b style="color:var(--txt)">別グループ</b>に。</div>`;
+  return h;
+}
+
+function viewSet(){
+  const s=D.settings, st=stats();
+  return `<div class="card"><div class="pad col">
+    <div><div class="eb">確定枠・先頭（生成タブのと同じもの）</div><input type="text" class="mono" data-inp="prefix" data-k="pf" value="${esc(s.prefix)}"></div>
+    <div><div class="eb">確定枠・末尾</div><input type="text" class="mono" data-inp="suffix" data-k="sf" value="${esc(s.suffix)}" placeholder="（任意）"></div>
+    <div><div class="row"><div class="eb sp" style="margin:0">ネガティブプロンプト</div>
+      <button data-act="copyNeg" style="font-size:11px;color:var(--brass);font-weight:700">コピー</button></div>
+      <textarea rows="3" data-inp="negative" data-k="ng" style="color:var(--dim);margin-top:5px">${esc(s.negative)}</textarea></div>
+  </div></div>
+
+  <div class="card"><div class="pad col">
+    <div class="row"><div class="sp"><div style="font-size:13px;font-weight:700">括弧をエスケープ</div>
+      <div class="mini mono">bow (weapon) → bow \\(weapon\\)</div></div>${sw(s.escapeParens,"escP")}</div>
+    <div style="height:1px;background:var(--rule)"></div>
+    <div class="row"><div class="sp"><div style="font-size:13px;font-weight:700">アンダースコア表記</div>
+      <div class="mini mono">long hair → long_hair</div></div>${sw(s.underscore,"under")}</div>
+  </div></div>
+
+  <div class="card"><div class="pad col">
+    <div class="eb">バックアップ</div>
+    <div class="mini">グループ ${st.g} / 単語 ${st.t} / ルール ${st.r}。<br>
+      ${canStore?"変更はこの端末に自動保存されます。":'<b style="color:var(--ng)">この環境では自動保存が効きません。必ずJSONを書き出して。</b>'}</div>
+    <div class="row" style="gap:8px">
+      <button class="btn full" data-act="backup">JSONをコピー</button>
+      <button class="btn full" data-act="download">ファイルに書き出し</button>
+    </div>
+    <input type="file" accept="application/json,.json" data-inp="file">
+    <textarea rows="3" data-inp="impText" data-k="imp" placeholder="JSONを貼り付けて読み込むこともできます">${esc(V.impText)}</textarea>
+    <button class="btn solid full" data-act="restore"${V.impText.trim()?"":" disabled"}>⇧ 貼り付けたJSONを読み込む</button>
+    <div style="height:1px;background:var(--rule)"></div>
+    <button class="btn ng full" data-act="reset">↺ デフォルトに戻す</button>
+  </div></div>`;
+}
+
+/* ══════════ モーダル ══════════ */
+function viewModal(){
+  const m=V.modal;
+  if(!m) return "";
+  const sheet=(title,body)=>`<div class="sheet">
+    <div class="shead"><b>${esc(title)}</b><button data-act="closeModal" style="color:var(--dim)">✕</button></div>
+    <div class="sbody">${body}</div></div>`;
+
+  if(m.type==="confirm"){
+    return sheet("確認",`<div style="font-size:14px;line-height:1.9">${esc(m.msg)}</div>
+      <div class="row" style="gap:8px"><button class="btn full" data-act="closeModal">やめる</button>
+      <button class="btn ng full" data-act="confirmYes">実行する</button></div>`);
+  }
+
+  if(m.type==="tag"){
+    const g=D.groups.find(x=>x.id===m.gid);
+    const t=g&&g.tags.find(x=>x.id===m.tid);
+    if(!t) return "";
+    return sheet("単語を編集",`
+      <div><div class="eb">TAG（英語 / danbooru）</div><input type="text" class="mono" data-inp="mTag" data-k="mt" value="${esc(t.tag)}"></div>
+      <div><div class="eb">メモ（日本語・任意）</div><input type="text" data-inp="mJa" data-k="mj" value="${esc(t.ja)}"></div>
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="sp"><div class="eb">抽選ウェイト</div><input type="number" step="0.5" min="0" value="${t.w}" data-inp="mW" style="width:100%">
+          <div class="mini">大きいほど出やすい（既定 1）</div></div>
+        <div class="sp"><div class="eb">強調</div><input type="number" step="0.05" min="0.1" max="2" value="${t.emph}" data-inp="mE" style="width:100%">
+          <div class="mini">1以外なら (tag:1.2) 形式</div></div>
+      </div>
+      <div><div class="eb">所属グループ</div><select data-sel="mGid" style="width:100%">
+        ${D.groups.map(x=>`<option value="${x.id}"${x.id===m.gid?" selected":""}>${esc(x.name)}</option>`).join("")}</select></div>
+      <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+        <span class="sp" style="font-size:13px">抽選に含める</span>${sw(t.on,"mOn")}</div>
+      <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px;border:1px solid ${t.fix?"var(--brass)":"transparent"}">
+        <span style="flex:none">📌</span>
+        <div class="sp"><div style="font-size:13px;font-weight:700;color:${t.fix?"var(--brass)":"var(--txt)"}">固定</div>
+          <div class="mini">抽選せず、毎回かならずプロンプトに入る</div></div>${sw(!!t.fix,"mFix")}</div>
+      <div class="row" style="gap:8px">
+        <button class="btn ng" data-act="delTag">🗑 削除</button>
+        <button class="btn lever full" data-act="closeModal">閉じる</button></div>`);
+  }
+
+  if(m.type==="rule"){
+    const r=m.draft, ex=r.type==="exclude";
+    return sheet(m.isNew?"ルールを追加":"ルールを編集",`
+      <div><div class="eb">種類</div><div class="row" style="gap:8px">
+        <button class="btn full ${ex?"ng":""}" data-act="rType" data-v="exclude">⊘ 排他（出さない）</button>
+        <button class="btn full" data-act="rType" data-v="link" style="${!ex?"background:var(--linkbg);color:var(--link);border-color:var(--link)":""}">🔗 連動（一緒に出す）</button>
+      </div></div>
+      <div><div class="eb">これが出たら</div>
+        ${r.a?`<div class="row" style="gap:8px"><span class="tgt src sp${r.a.k==="group"?" g":""}" style="padding:9px 11px">${esc(refLabel(r.a))}</span>
+          <button class="btn" data-act="pickA">✎</button></div>`
+        :`<button class="btn full" data-act="pickA">＋ 起点を選ぶ</button>`}</div>
+      <div><div class="eb">${ex?"これは出さない（複数可）":"これも一緒に出す（複数可）"}</div>
+        <div class="chips" style="margin-bottom:8px">${r.targets.map((t,i)=>
+          `<span class="tgt ${ex?"ex":"lk"}${t.k==="group"?" g":""}">${esc(refLabel(t))}
+            <button data-act="rmTarget" data-i="${i}" style="color:inherit">✕</button></span>`).join("")}</div>
+        <button class="btn full" data-act="pickT">＋ 対象を追加</button></div>
+      ${ex?`<div><div class="eb">方向</div><div class="row" style="gap:8px">
+        <button class="btn full ${r.dir==="both"?"solid":""}" data-act="rDir" data-v="both">双方向 ⟷</button>
+        <button class="btn full ${r.dir==="a2b"?"solid":""}" data-act="rDir" data-v="a2b">片方向 →</button></div>
+        <div class="mini" style="margin-top:6px">双方向 = どちらが先に出ても、もう片方を止める。<br>片方向 = 起点が出たときだけ対象を止める。<br>
+        <span style="color:var(--brass)">抽選はグループの並び順（上から）で行われます。</span></div></div>`:""}
+      <div class="row" style="gap:8px">
+        ${m.isNew?"":`<button class="btn ng" data-act="delRule">🗑 削除</button>`}
+        <button class="btn lever full" data-act="saveRule"${(r.a&&r.targets.length)?"":" disabled"}>保存</button></div>`);
+  }
+
+  if(m.type==="ref"){
+    const lq=(m.q||"").trim().toLowerCase();
+    let body=`<div class="row" style="gap:8px">
+      <button class="btn full ${m.mode==="tag"?"solid":""}" data-act="refMode" data-v="tag">単語</button>
+      <button class="btn full ${m.mode==="group"?"solid":""}" data-act="refMode" data-v="group">グループ</button></div>
+      <input type="text" data-inp="refQ" data-k="refq" placeholder="検索" value="${esc(m.q||"")}">`;
+    if(m.mode==="group"){
+      body+=`<div class="col" style="gap:5px">`+D.groups.filter(g=>!lq||g.name.toLowerCase().includes(lq))
+        .map(g=>`<button class="pickrow" data-act="refPick" data-k2="group" data-id="${g.id}">
+          <span class="sp">［${esc(g.name)}］</span><span class="mini mono">${g.tags.length}語</span></button>`).join("")+`</div>`;
+    }else{
+      let budget=180,cut=0,out="";
+      for(const g of D.groups){
+        const hits=g.tags.filter(t=>!lq||t.tag.toLowerCase().includes(lq)||(t.ja||"").toLowerCase().includes(lq));
+        if(!hits.length) continue;
+        const take=Math.max(0,Math.min(hits.length,budget));
+        cut+=hits.length-take; budget-=take;
+        if(take>0) out+=`<div><div class="eb">${esc(g.name)}</div><div class="chips">`+
+          hits.slice(0,take).map(t=>`<button class="chip" data-act="refPick" data-k2="tag" data-id="${t.id}">${esc(t.tag)}</button>`).join("")+`</div></div>`;
+      }
+      body+=`<div class="col">${out}</div>`;
+      if(cut>0) body+=`<div class="ph">あと ${cut} 語あります。検索で絞ってください。</div>`;
+    }
+    return sheet("単語 / グループを選ぶ",body);
+  }
+
+  if(m.type==="ukpick"){
+    return sheet("「"+m.n+"」の行き先",
+      `<div class="col" style="gap:5px">
+        <button class="pickrow" data-act="ukSet" data-n="${esc(m.n)}" data-gid="__new">＋ 新しいグループ（${esc(V.pNewName)}）</button>
+        ${D.groups.map(g=>`<button class="pickrow" data-act="ukSet" data-n="${esc(m.n)}" data-gid="${g.id}">
+          <span class="sp">${esc(g.name)}</span><span class="mini mono">${g.tags.length}</span></button>`).join("")}
+      </div>`);
+  }
+  return "";
+}
+
+/* ══════════ render ══════════ */
+function render(){
+  const act=document.activeElement;
+  const fk=act&&act.dataset?act.dataset.k:null;
+  const ss=act&&act.selectionStart, se=act&&act.selectionEnd;
+  const sy=window.scrollY;
+
+  $("stat").innerHTML=`<div>${stats().g} groups</div><div><b>${stats().t} tags</b></div>`;
+  $("save").className="save"+(V.dirty?" on":"");
+  $("nav").innerHTML=TABS.map(([id,l])=>`<button class="${V.tab===id?"sel":""}" data-act="tab" data-t="${id}">${l}</button>`).join("");
+
+  let body="";
+  if(V.toast) body+=`<div class="toast">✦ ${esc(V.toast)}</div>`;
+  body+= V.tab==="gen"?viewGen(): V.tab==="groups"?viewGroups(): V.tab==="rules"?viewRules():
+         V.tab==="import"?viewImport(): viewSet();
+  $("app").innerHTML=body;
+
+  $("lever").innerHTML = V.tab==="gen"
+    ? `<div class="lever"><div class="wrap">
+        <button class="btn lever lg full" data-act="roll">🎲 抽選する</button>
+        <button class="btn solid lg" data-act="copyPrompt"${prompt()?"":" disabled"}>⧉</button></div></div>` : "";
+
+  const mo=$("modal");
+  if(V.modal){ mo.className=""; mo.innerHTML=viewModal(); } else { mo.className="hide"; mo.innerHTML=""; }
+
+  if(fk){
+    const el=document.querySelector('[data-k="'+fk+'"]');
+    if(el){ el.focus(); try{ el.setSelectionRange(ss,se); }catch(e){} }
+  }
+  window.scrollTo(0,sy);
+}
+
+/* ══════════ 操作 ══════════ */
+const G=id=>D.groups.find(g=>g.id===id);
+
+const ACT={
+  tab:(d)=>{ V.tab=d.t; render(); window.scrollTo(0,0); },
+  backup:()=>{ copy(JSON.stringify(D,null,2)); V.dirty=false; render(); },
+  download:()=>{
+    try{
+      const b=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(b); a.download="tag-gacha.json"; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      V.dirty=false; say("書き出しました");
+    }catch(e){ say("書き出せません。JSONをコピーして"); }
+  },
+  restore:()=>{
+    try{
+      const d=JSON.parse(V.impText);
+      if(!d.groups||!d.groups.length) throw 0;
+      d.settings={...DEFAULT_SETTINGS,...(d.settings||{})};
+      d.rules=d.rules||[];
+      D=d; V.result=null; V.locks={}; V.impText=""; V.fresh=false;
+      persist(); say("復元しました"); render();
+    }catch(e){ say("JSONの形式が違います"); }
+  },
+  reset:()=>{ V.modal={type:"confirm",msg:"すべて初期状態に戻します。取り込んだ単語も消えます。",yes:"reset2"}; render(); },
+  reset2:()=>{ D=buildDefaults(); V.result=null; V.locks={}; persist(); say("初期化しました"); },
+  dismissFresh:()=>{ V.fresh=false; render(); },
+  toggleFixBox:()=>{ V.fixOpen=!V.fixOpen; render(); },
+
+  roll:()=>{ V.result=generate(D,V.locks,V.result); render(); },
+  reroll:(d)=>{ V.result=V.result?rerollOne(D,V.result,d.id):generate(D,{},null); render(); },
+  lock:(d)=>{ V.locks[d.id]=!V.locks[d.id]; render(); },
+  dropTag:(d)=>{ if(!V.result) return;
+    V.result={byGroup:{...V.result.byGroup,[d.id]:(V.result.byGroup[d.id]||[]).filter(t=>t.id!==d.tid)}}; render(); },
+  copyPrompt:()=>copy(prompt()),
+  copyNeg:()=>copy(D.settings.negative),
+  batch:()=>{ const n=clamp(Number(D.settings.batch)||5,1,30);
+    V.batchOut=Array.from({length:n},()=>toPrompt(D,generate(D,{},null))); say(n+"件つくりました"); },
+  copyBatch:()=>copy(V.batchOut.join("\n\n")),
+  copyOne:(d)=>copy(V.batchOut[+d.i]),
+
+  gOn:(d)=>mutate(()=>{ const g=G(d.id); g.on=!g.on; }),
+  gReq:(d)=>mutate(()=>{ const g=G(d.id); g.req=!g.req; }),
+  toggleG:(d)=>{ V.openG[d.id]=!V.openG[d.id]; render(); },
+  moveUp:(d)=>mutate(()=>{ const i=+d.i; if(i>0){ const a=D.groups; [a[i-1],a[i]]=[a[i],a[i-1]]; } }),
+  moveDn:(d)=>mutate(()=>{ const i=+d.i; const a=D.groups; if(i<a.length-1){ [a[i+1],a[i]]=[a[i],a[i+1]]; } }),
+  delG:(d)=>{ V.modal={type:"confirm",msg:"「"+G(d.id).name+"」を削除します。",yes:"delG2",id:d.id}; render(); },
+  delG2:()=>mutate(()=>{ D.groups=D.groups.filter(g=>g.id!==V.modal.id); pruneRules(); }),
+  addGroup:()=>mutate(()=>{ const g={id:uid(),name:"新しいグループ",min:0,max:1,on:true,req:false,tags:[]};
+    D.groups.push(g); V.openG[g.id]=true; }),
+  more:(d)=>{ V.limitG[d.id]=(V.limitG[d.id]||120)+240; render(); },
+  clearQ:()=>{ V.q=""; render(); },
+  fixAll:(d)=>mutate(()=>{ G(d.id).tags.forEach(t=>t.fix=true); }),
+  unfixAll:(d)=>mutate(()=>{ G(d.id).tags.forEach(t=>t.fix=false); }),
+  openAdd:(d)=>{ V.addTo=d.id; V.bulk=""; render(); },
+  cancelAdd:()=>{ V.addTo=null; V.bulk=""; render(); },
+  bulkComma:()=>{ V.bulkComma=!V.bulkComma; render(); },
+  doAdd:(d)=>{
+    const rows=V.bulk.split(V.bulkComma?/[\n,]/:/\n/).map(s=>s.trim()).filter(Boolean);
+    if(!rows.length) return;
+    mutate(()=>{
+      const g=G(d.id);
+      const have=new Set(g.tags.map(t=>t.tag.toLowerCase()));
+      let n=0;
+      for(const row of rows){
+        const [tg,ja]=row.split("|");
+        const name=(tg||"").trim();
+        if(!name||have.has(name.toLowerCase())) continue;
+        have.add(name.toLowerCase());
+        g.tags.push({id:uid(),tag:name,ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false}); n++;
+      }
+      V.addTo=null; V.bulk=""; V.toast=n+"語を追加しました";
+    });
+  },
+  editTag:(d)=>{ V.modal={type:"tag",gid:d.id,tid:d.tid}; render(); },
+  mOn:()=>mutate(()=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.on=!t.on; }),
+  mFix:()=>mutate(()=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.fix=!t.fix; }),
+  delTag:()=>mutate(()=>{ const g=G(V.modal.gid); g.tags=g.tags.filter(t=>t.id!==V.modal.tid); pruneRules(); V.modal=null; }),
+
+  newRule:()=>{ V.modal={type:"rule",isNew:true,draft:{id:uid(),type:"exclude",dir:"both",a:null,targets:[]}}; render(); },
+  editRule:(d)=>{ const r=D.rules.find(x=>x.id===d.id);
+    V.modal={type:"rule",isNew:false,draft:JSON.parse(JSON.stringify(r))}; render(); },
+  rType:(d)=>{ V.modal.draft.type=d.v; if(d.v==="link") V.modal.draft.dir="a2b"; render(); },
+  rDir:(d)=>{ V.modal.draft.dir=d.v; render(); },
+  rmTarget:(d)=>{ V.modal.draft.targets.splice(+d.i,1); render(); },
+  pickA:()=>{ V.modal={...V.modal,ref:"a",_back:{...V.modal}}; V.modal={type:"ref",mode:"tag",q:"",back:V.modal._back,slot:"a"}; render(); },
+  pickT:()=>{ V.modal={type:"ref",mode:"tag",q:"",back:{...V.modal},slot:"t"}; render(); },
+  refMode:(d)=>{ V.modal.mode=d.v; render(); },
+  refPick:(d)=>{
+    const back=V.modal.back, slot=V.modal.slot;
+    const ref={k:d.k2,id:d.id};
+    if(slot==="a") back.draft.a=ref;
+    else if(!back.draft.targets.some(t=>t.k===ref.k&&t.id===ref.id)) back.draft.targets.push(ref);
+    V.modal=back; render();
+  },
+  saveRule:()=>mutate(()=>{
+    const r=V.modal.draft;
+    const i=D.rules.findIndex(x=>x.id===r.id);
+    if(i>=0) D.rules[i]=r; else D.rules.push(r);
+    V.modal=null; V.toast="ルールを保存しました";
+  }),
+  delRule:()=>mutate(()=>{ D.rules=D.rules.filter(x=>x.id!==V.modal.draft.id); V.modal=null; }),
+
+  impMode:(d)=>{ V.impMode=d.m; render(); },
+  copyDbURL:()=>copy(dbURL(V.dbCat,1)),
+  copyPURL:()=>copy(V.pURL),
+  dbFetch:async()=>{
+    V.dbErr=""; V.dbBusy="接続中…"; render();
+    const rows=[];
+    try{
+      for(let p=1;p<=V.dbPages;p++){
+        V.dbBusy=`取得中… ${p}/${V.dbPages}`; render();
+        const res=await fetch(dbURL(V.dbCat,p));
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const j=await res.json();
+        if(!Array.isArray(j)||!j.length) break;
+        rows.push(...parseTagPayload(JSON.stringify(j)));
+        await new Promise(r=>setTimeout(r,350));
+      }
+      addPool(rows); V.dbBusy=""; say(rows.length+"語を取得しました");
+    }catch(e){
+      V.dbBusy="";
+      V.dbErr="直接取得できませんでした（danbooru 側のCORS制限）。下のURLを開いて、中身を全選択コピー → 貼り付け欄にペーストしてください。";
+      render();
+    }
+  },
+  dbParse:()=>{
+    try{
+      const rows=parseTagPayload(V.dbPaste);
+      if(!rows.length) throw 0;
+      addPool(rows); V.dbPaste=""; V.dbErr=""; say(rows.length+"語を読み込みました");
+    }catch(e){ V.dbErr="解析できません。tags.json の中身（[{...}] の配列）を丸ごと貼ってください。"; render(); }
+  },
+  dbWeight:()=>{ V.dbWeight=!V.dbWeight; render(); },
+  dbClear:()=>{ V.dbPool=[]; render(); },
+  dbCommit:()=>{
+    const plan=planImport(V.dbPool,D,{minCount:V.dbMin,block:V.dbBlock,useWeight:V.dbWeight});
+    if(!plan.keep.length){ say("追加できる単語がありません"); return; }
+    const clean=plan.keep.map(({pc,...t})=>t);
+    mutate(()=>{
+      if(V.dbTarget==="__new") D.groups.push({id:uid(),name:V.dbNewName||"danbooru 取込",min:0,max:1,on:true,req:false,tags:clean});
+      else G(V.dbTarget).tags.push(...clean);
+      V.dbPool=[]; V.toast=clean.length+"語を追加しました";
+    });
+  },
+
+  loadPost:async()=>{
+    V.pErr=""; V.pTags=null; V.pURL=""; V.pPick={};
+    const raw=V.pSrc.trim();
+    if(!raw) return;
+    const id=extractPostId(raw);
+    if(id){
+      const url=postURL(id);
+      V.pURL=url; V.pBusy="取得中…"; render();
+      try{
+        const res=await fetch(url);
+        if(!res.ok) throw new Error(String(res.status));
+        V.pTags=postToTags(await res.json());
+        V.pBusy=""; autoRoute(); say("post "+id+" を読みました");
+      }catch(e){
+        V.pBusy="";
+        V.pErr="直接取得できませんでした（CORS制限）。下のリンクでJSONを開いて、中身を全部コピーしてここに貼ってください。";
+        render();
+      }
+      return;
+    }
+    try{
+      const t=parseAnySource(raw);
+      if(!t||!t.general.length) throw 0;
+      V.pTags=t; autoRoute(); say(t.general.length+"語を読みました");
+    }catch(e){
+      V.pErr="読めません。post のURL / ID、posts/xxx.json の中身、またはプロンプト文字列を入れてください。";
+      render();
+    }
+  },
+  pAuto:()=>{ V.pAuto=!V.pAuto; autoRoute(); render(); },
+  pickAll:(d)=>{ const on=d.v==="1"; Object.keys(V.pPick).forEach(k=>V.pPick[k].on=on); render(); },
+  ukToggle:(d)=>{ const v=V.pPick[d.n]||{on:true,gid:"__new"}; v.on=!v.on; V.pPick[d.n]=v; render(); },
+  ukPick:(d)=>{ V.modal={type:"ukpick",n:d.n}; render(); },
+  ukSet:(d)=>{ const v=V.pPick[d.n]||{on:true,gid:"__new"}; v.gid=d.gid; V.pPick[d.n]=v; V.modal=null; render(); },
+  addSelected:()=>{
+    const chosen=Object.entries(V.pPick).filter(([,v])=>v.on);
+    if(!chosen.length) return;
+    mutate(()=>{
+      const bucket={};
+      for(const [name,v] of chosen){
+        (bucket[v.gid]=bucket[v.gid]||[]).push({id:uid(),tag:name,ja:"",w:1,emph:1,on:true,fix:false});
+      }
+      for(const gid of Object.keys(bucket)){
+        if(gid==="__new") D.groups.push({id:uid(),name:V.pNewName||"参考画像から",min:0,max:1,on:true,req:false,tags:bucket.__new});
+        else { const g=G(gid); if(g) g.tags.push(...bucket[gid]); }
+      }
+      V.toast=chosen.length+"語を追加しました";
+    });
+    autoRoute();
+  },
+  applyRecipe:()=>{
+    const rec=buildRecipe(V.pTags.general,D);
+    V.result={byGroup:rec.byGroup};
+    V.locks={};
+    Object.keys(rec.byGroup).forEach(k=>{ V.locks[k]=true; });
+    V.tab="gen"; say("型として読み込みました");
+    window.scrollTo(0,0);
+  },
+
+  escP:()=>mutate(()=>{ D.settings.escapeParens=!D.settings.escapeParens; }),
+  under:()=>mutate(()=>{ D.settings.underscore=!D.settings.underscore; }),
+
+  closeModal:()=>{ V.modal=null; render(); },
+  confirmYes:()=>{ const y=V.modal.yes; ACT[y](); if(V.modal&&V.modal.type==="confirm") V.modal=null; render(); }
+};
+
+function addPool(rows){
+  const seen=new Set(V.dbPool.map(x=>x.name));
+  for(const r of rows) if(r.name&&!seen.has(r.name)){ seen.add(r.name); V.dbPool.push(r); }
+}
+function autoRoute(){
+  V.pPick={};
+  if(!V.pTags) { render(); return; }
+  const rec=buildRecipe(V.pTags.general,D);
+  const idx=buildWordIndex(D);
+  for(const n of rec.unknown) V.pPick[n]={on:true,gid:(V.pAuto&&guessGroup(n,idx))||"__new"};
+  render();
+}
+function pruneRules(){
+  const gi=new Set(D.groups.map(g=>g.id));
+  const ti=new Set(D.groups.flatMap(g=>g.tags.map(t=>t.id)));
+  const alive=r=>r.k==="group"?gi.has(r.id):ti.has(r.id);
+  D.rules=D.rules.map(r=>({...r,targets:r.targets.filter(alive)}))
+                 .filter(r=>r.a&&alive(r.a)&&r.targets.length);
+}
+
+const INP={
+  q:v=>{ V.q=v; render(); },
+  bulk:v=>{ V.bulk=v; },
+  impText:v=>{ const was=!!V.impText.trim(); V.impText=v; if(was!==!!v.trim()) render(); },
+  batch:v=>{ D.settings.batch=clamp(Number(v)||1,1,30); persist(); },
+  prefix:v=>{ D.settings.prefix=v; V.dirty=true; persist(); refreshOut(); },
+  suffix:v=>{ D.settings.suffix=v; V.dirty=true; persist(); refreshOut(); },
+  negative:v=>{ D.settings.negative=v; V.dirty=true; persist(); },
+  gname:(v,d)=>{ G(d.id).name=v; V.dirty=true; persist(); },
+  mTag:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.tag=v; V.dirty=true; persist(); },
+  mJa:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.ja=v; V.dirty=true; persist(); },
+  mW:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.w=Number(v)||0; V.dirty=true; persist(); },
+  mE:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.emph=Number(v)||1; V.dirty=true; persist(); },
+  dbPages:v=>{ V.dbPages=clamp(Number(v)||1,1,20); },
+  dbPaste:v=>{ const was=!!V.dbPaste.trim(); V.dbPaste=v; if(was!==!!v.trim()) render(); },
+  dbMin:v=>{ V.dbMin=Math.max(0,Number(v)||0); render(); },
+  dbBlock:v=>{ V.dbBlock=v; },
+  dbNewName:v=>{ V.dbNewName=v; },
+  pSrc:v=>{ const was=!!V.pSrc.trim(); V.pSrc=v; if(was!==!!v.trim()) render(); },
+  pNewName:v=>{ V.pNewName=v; },
+  refQ:v=>{ V.modal.q=v; render(); }
+};
+
+const SEL={
+  gmin:(v,d)=>mutate(()=>{ const g=G(d.id); g.min=+v; g.max=Math.max(+v,g.max); }),
+  gmax:(v,d)=>mutate(()=>{ const g=G(d.id); g.max=+v; g.min=Math.min(+v,g.min); }),
+  dbCat:v=>{ V.dbCat=v; render(); },
+  dbTarget:v=>{ V.dbTarget=v; render(); },
+  mGid:v=>mutate(()=>{
+    const from=G(V.modal.gid);
+    if(v===V.modal.gid) return;
+    const t=from.tags.find(x=>x.id===V.modal.tid);
+    from.tags=from.tags.filter(x=>x.id!==V.modal.tid);
+    G(v).tags.push(t);
+    V.modal.gid=v;
+  })
+};
+
+/* ══════════ イベント ══════════ */
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");
+  if(!el) return;
+  e.preventDefault();
+  const f=ACT[el.dataset.act];
+  if(f) f(el.dataset,el,e);
+});
+document.addEventListener("input",e=>{
+  const el=e.target.closest("[data-inp]");
+  if(!el) return;
+  if(el.dataset.inp==="file") return;
+  const f=INP[el.dataset.inp];
+  if(f) f(el.value,el.dataset,el);
+});
+document.addEventListener("change",e=>{
+  const s=e.target.closest("[data-sel]");
+  if(s){ const f=SEL[s.dataset.sel]; if(f) f(s.value,s.dataset); return; }
+  const fi=e.target.closest('[data-inp="file"]');
+  if(fi&&fi.files&&fi.files[0]){
+    const fr=new FileReader();
+    fr.onload=()=>{ V.impText=String(fr.result); ACT.restore(); };
+    fr.readAsText(fi.files[0]);
+    fi.value="";
+  }
+});
+$("modal").addEventListener("click",e=>{ if(e.target.id==="modal"){ V.modal=null; render(); } });
+window.addEventListener("error",e=>{
+  const a=$("app");
+  if(a) a.innerHTML=`<div class="card"><div class="pad col">
+    <b style="color:var(--ng)">エラーで止まりました</b>
+    <div class="out" style="color:var(--dim);font-size:11px">${esc(e.message)}</div>
+    <div class="mini">このメッセージを貼ってくれたら直します。</div></div></div>`;
+});
+
+/* ══════════ 起動 ══════════ */
+(function boot(){
+  const raw=loadRaw();
+  let fromStore=false;
+  if(raw){ try{ D=JSON.parse(raw); fromStore=!!(D&&D.groups&&D.groups.length); }catch(e){ D=null; } }
+  if(!fromStore) D=buildDefaults();
+  D.settings={...DEFAULT_SETTINGS,...(D.settings||{})};
+  D.rules=D.rules||[];
+  D.groups.forEach(g=>{ if(g.req===undefined) g.req=false; g.tags.forEach(t=>{ if(t.fix===undefined) t.fix=false; }); });
+  V.fresh=!fromStore&&canStore===false?true:!fromStore;
+  render();
+})();
+</script>
+</body>
+</html>
