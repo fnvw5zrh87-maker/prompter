@@ -135,6 +135,13 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
 .sbody{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
 .pickrow{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--ink3);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:13px}
 
+.rr{display:flex;align-items:center;gap:8px;background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:8px 10px}
+.rr.held{border-color:var(--brass);background:var(--brassd)}
+.rr.drop{border-style:dashed;border-color:var(--brass)}
+.rr .no{font-family:var(--mono);font-size:10px;color:var(--dim2);width:22px;flex:none;text-align:right}
+.rr .nm{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr button{flex:none;color:var(--dim2);padding:4px 6px;border-radius:5px;background:rgba(255,255,255,.05);font-size:12px;line-height:1}
+.rr .grab{background:var(--ink4);color:var(--txt);padding:6px 9px;font-size:14px}
 .uk{display:flex;align-items:center;gap:8px;background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:6px 8px}
 .uk.off{background:transparent;opacity:.4}
 .cb{width:20px;height:20px;border:1px solid var(--rule2);border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;color:#241c08}
@@ -152,7 +159,7 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
     <div class="bar"></div>
     <div class="sp">
       <div class="ttl">タグガチャ</div>
-      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v1.5 · 07/14</span></div>
+      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.1 · 07/14</span></div>
     </div>
     <div class="stat" id="stat"></div>
     <button class="save" id="save" data-act="backup">保存</button>
@@ -214,13 +221,41 @@ const DEF=[
 const FRAME_TAGS=["portrait","upper body","cowboy shot","full body","close-up","wide shot","bust"];
 const DEF_FULL="boots, heels, sneakers, mary janes, loafers, sandals, zouri, geta, slippers, barefoot, thighhighs, pantyhose, kneehighs, socks, garter, bare legs, pants, jeans, leggings, long skirt, seiza, wariza, squatting, kneeling, lying, jumping, running, dancing, walking, full body";
 const DEF_COWBOY="skirt, shorts, belt, zettai ryouiki, hand on hip, thigh, hip, sitting, crossed legs";
+
+/* ══════════ 同梱キャラ（作品ごと・全部OFFで開始） ══════════ */
+const CHARS=[
+["ブルアカ","blue_archive",["arona_(blue_archive)|アロナ","plana_(blue_archive)|プラナ","shiroko_(blue_archive)|シロコ","hoshino_(blue_archive)|ホシノ","hina_(blue_archive)|ヒナ","yuuka_(blue_archive)|ユウカ","noa_(blue_archive)|ノア","mika_(blue_archive)|ミカ","aru_(blue_archive)|アル","asuna_(blue_archive)|アスナ","karin_(blue_archive)|カリン","iori_(blue_archive)|イオリ","neru_(blue_archive)|ネル","toki_(blue_archive)|トキ","himari_(blue_archive)|ヒマリ","serika_(blue_archive)|セリカ","ayane_(blue_archive)|アヤネ","hifumi_(blue_archive)|ヒフミ","azusa_(blue_archive)|アズサ","hanako_(blue_archive)|ハナコ","koyuki_(blue_archive)|コユキ","tsurugi_(blue_archive)|ツルギ","kokona_(blue_archive)|ココナ","wakamo_(blue_archive)|ワカモ"]],
+["ウマ娘","umamusume",["special_week_(umamusume)|スペシャルウィーク","silence_suzuka_(umamusume)|サイレンススズカ","tokai_teio_(umamusume)|トウカイテイオー","gold_ship_(umamusume)|ゴールドシップ","vodka_(umamusume)|ウオッカ","daiwa_scarlet_(umamusume)|ダイワスカーレット","mejiro_mcqueen_(umamusume)|メジロマックイーン","rice_shower_(umamusume)|ライスシャワー","agnes_tachyon_(umamusume)|アグネスタキオン","manhattan_cafe_(umamusume)|マンハッタンカフェ","symboli_rudolf_(umamusume)|シンボリルドルフ","oguri_cap_(umamusume)|オグリキャップ","taiki_shuttle_(umamusume)|タイキシャトル","grass_wonder_(umamusume)|グラスワンダー","maruzensky_(umamusume)|マルゼンスキー","air_groove_(umamusume)|エアグルーヴ","mihono_bourbon_(umamusume)|ミホノブルボン","kitasan_black_(umamusume)|キタサンブラック","satono_diamond_(umamusume)|サトノダイヤモンド","curren_chan_(umamusume)|カレンチャン","narita_brian_(umamusume)|ナリタブライアン","el_condor_pasa_(umamusume)|エルコンドルパサー"]],
+["崩壊スターレイル","honkai:_star_rail",["march_7th_(honkai:_star_rail)|三月なのか","stelle_(honkai:_star_rail)|星","kafka_(honkai:_star_rail)|カフカ","silver_wolf_(honkai:_star_rail)|銀狼","firefly_(honkai:_star_rail)|ホタル","seele_(honkai:_star_rail)|ゼーレ","himeko_(honkai:_star_rail)|姫子","bronya_rand|ブローニャ","jingliu|鏡流","fu_xuan|符玄","ruan_mei|ルアン・メェイ","acheron_(honkai:_star_rail)|アケロン","robin_(honkai:_star_rail)|ロビン","black_swan_(honkai:_star_rail)|花火","sparkle_(honkai:_star_rail)|スパークル","topaz_(honkai:_star_rail)|トパーズ","tingyun|停雲","feixiao|飛霄","herta_(honkai:_star_rail)|ヘルタ","clara_(honkai:_star_rail)|クラーラ","castorice|遐蝶","the_herta|マダム・ヘルタ"]],
+["崩壊3rd","honkai_impact_3rd",["kiana_kaslana|キアナ","raiden_mei|雷電芽衣","bronya_zaychik|ブローニャ","theresa_apocalypse|テレサ","fu_hua|符華","yae_sakura|八重桜","rita_rossweisse|リタ","seele_vollerei|ゼーレ","durandal_(honkai_impact)|デュランダル","elysia_(honkai_impact)|エリシア"]],
+["原神","genshin_impact",["ganyu_(genshin_impact)|甘雨","hu_tao_(genshin_impact)|胡桃","raiden_shogun|雷電将軍","yae_miko|八重神子","nahida_(genshin_impact)|ナヒーダ","furina_(genshin_impact)|フリーナ","klee_(genshin_impact)|クレー","keqing_(genshin_impact)|刻晴","mona_(genshin_impact)|モナ","eula_(genshin_impact)|エウルア","yelan_(genshin_impact)|夜蘭","kamisato_ayaka|神里綾華","sangonomiya_kokomi|珊瑚宮心海","shenhe_(genshin_impact)|申鶴","yoimiya_(genshin_impact)|宵宮","nilou_(genshin_impact)|ニィロウ","lumine_(genshin_impact)|蛍","paimon_(genshin_impact)|パイモン","fischl_(genshin_impact)|フィッシュル","amber_(genshin_impact)|アンバー","noelle_(genshin_impact)|ノエル","lisa_(genshin_impact)|リサ","jean_(genshin_impact)|ジン","barbara_(genshin_impact)|バーバラ","navia_(genshin_impact)|ナヴィア","clorinde_(genshin_impact)|クロリンデ","arlecchino_(genshin_impact)|アルレッキーノ","columbina_(genshin_impact)|コロンビーナ"]],
+["東方","touhou",["hakurei_reimu|博麗霊夢","kirisame_marisa|霧雨魔理沙","izayoi_sakuya|十六夜咲夜","remilia_scarlet|レミリア","flandre_scarlet|フランドール","konpaku_youmu|魂魄妖夢","saigyouji_yuyuko|西行寺幽々子","yakumo_yukari|八雲紫","fujiwara_no_mokou|藤原妹紅","kamishirasawa_keine|上白沢慧音","shameimaru_aya|射命丸文","reiuji_utsuho|霊烏路空","komeiji_koishi|古明地こいし","komeiji_satori|古明地さとり","cirno|チルノ","alice_margatroid|アリス","patchouli_knowledge|パチュリー","hong_meiling|紅美鈴","kochiya_sanae|東風谷早苗","houraisan_kaguya|蓬莱山輝夜","yasaka_kanako|八坂神奈子","moriya_suwako|洩矢諏訪子","hinanawi_tenshi|比那名居天子","inubashiri_momiji|犬走椛","rumia|ルーミア","tatara_kogasa|多々良小傘","mystia_lorelei|ミスティア","letty_whiterock|レティ","yagokoro_eirin|八意永琳","reisen_udongein_inaba|鈴仙"]],
+["Fate","fate",["artoria_pendragon_(fate)|アルトリア","saber_alter|セイバーオルタ","jeanne_d\'arc_(fate)|ジャンヌ","jeanne_d\'arc_alter_(fate)|ジャンヌオルタ","nero_claudius_(fate)|ネロ","mash_kyrielight|マシュ","tohsaka_rin|遠坂凛","matou_sakura|間桐桜","illyasviel_von_einzbern|イリヤ","scathach_(fate)|スカサハ","tamamo_(fate)|玉藻の前","okita_souji_(fate)|沖田総司","miyamoto_musashi_(fate)|宮本武蔵","ereshkigal_(fate)|エレシュキガル","ishtar_(fate)|イシュタル","minamoto_no_raikou_(fate)|源頼光","abigail_williams_(fate)|アビゲイル","meltryllis_(fate)|メルトリリス","bb_(fate)|BB","morgan_le_fay_(fate)|モルガン","artoria_pendragon_(lancer_alter)_(fate)|槍オルタ","mordred_(fate)|モードレッド","medusa_(fate)|メドゥーサ","medea_(fate)|メディア","nightingale_(fate)|ナイチンゲール","kama_(fate)|カーマ","murasaki_shikibu_(fate)|紫式部"]],
+["にじさんじ","nijisanji",["tsukino_mito|月ノ美兎","higuchi_kaede|樋口楓","lize_helesta|リゼ・ヘルエスタ","ange_katrina|アンジュ・カトリーナ","inui_toko|戌亥とこ","honma_himawari|本間ひまわり","todoroki_kyouko|轟京子","shiina_yuika|椎名唯華","sukoya_kana|健屋花那","hoshikawa_sara|星川サラ","sasaki_saku|佐々木沙々","yuzuki_roa|夢月ロア","suzuhara_lulu|鈴原るる","yuuki_chihiro|勇気ちひろ","machita_chima|町田ちま","pomu_rainpuff|ポム・レインパフ","elira_pendora|エリーラ・ペンドラ","finana_ryugu|フィナーナ・リューグー","selen_tatsuki|セレン・タツキ","enna_alouette|エンナ・アルーエ","millie_parfait|ミリー・パフェ","rosemi_lovelock|ロゼミ・ラブロック","petra_gurin|ペトラ・グリン","nina_kosaka|ニーナ・コサカ","reimu_endou|エデン組レイム"]],
+["ホロライブ","hololive",["gawr_gura|がうるぐら","mori_calliope|森カリオペ","ninomae_ina\'nis|一伊那尓栖","takanashi_kiara|小鳥遊キアラ","watson_amelia|ワトソン・アメリア","houshou_marine|宝鐘マリン","usada_pekora|兎田ぺこら","shirakami_fubuki|白上フブキ","minato_aqua|湊あくあ","nakiri_ayame|百鬼あやめ","hoshimachi_suisei|星街すいせい","tokino_sora|ときのそら","shirogane_noel|白銀ノエル","shiranui_flare|不知火フレア","oozora_subaru|大空スバル","sakura_miko|さくらみこ","inugami_korone|戌神ころね","nekomata_okayu|猫又おかゆ","tsunomaki_watame|角巻わため","amane_kanata|天音かなた","hakos_baelz|ハコス・ベールズ","murasaki_shion|紫咲シオン","yuzuki_choco|癒月ちょこ","natsuiro_matsuri|夏色まつり","ookami_mio|大神ミオ","ceres_fauna|セレス・ファウナ","ouro_kronii|オーロ・クロニー"]],
+["アークナイツ","arknights",["amiya_(arknights)|アーミヤ","texas_(arknights)|テキサス","exusiai_(arknights)|エクシア","ch\'en_(arknights)|チェン","skadi_(arknights)|スカジ","surtr_(arknights)|スルト","w_(arknights)|W","lappland_(arknights)|ラップランド","mudrock_(arknights)|マドロック","specter_(arknights)|スペクター","rosmontis_(arknights)|ロスモンティス","kal\'tsit_(arknights)|ケルシー","angelina_(arknights)|アンジェリーナ","nightingale_(arknights)|ナイチンゲール","ifrit_(arknights)|イフリータ","suzuran_(arknights)|スズラン","blaze_(arknights)|ブレイズ","nian_(arknights)|ニェン","dusk_(arknights)|シー","nearl_(arknights)|ニアール"]],
+["アズレン","azur_lane",["belfast_(azur_lane)|ベルファスト","enterprise_(azur_lane)|エンタープライズ","taihou_(azur_lane)|大鳳","akagi_(azur_lane)|赤城","kaga_(azur_lane)|加賀","st._louis_(azur_lane)|セントルイス","formidable_(azur_lane)|フォーミダブル","illustrious_(azur_lane)|イラストリアス","prinz_eugen_(azur_lane)|プリンツ・オイゲン","bismarck_(azur_lane)|ビスマルク","unicorn_(azur_lane)|ユニコーン","laffey_(azur_lane)|ラフィー","javelin_(azur_lane)|ジャベリン","ayanami_(azur_lane)|綾波","z23_(azur_lane)|Z23","cleveland_(azur_lane)|クリーブランド","sirius_(azur_lane)|シリアス","hood_(azur_lane)|フッド"]],
+["艦これ","kantai_collection",["shimakaze_(kancolle)|島風","kongou_(kancolle)|金剛","akagi_(kancolle)|赤城","kaga_(kancolle)|加賀","yamato_(kancolle)|大和","musashi_(kancolle)|武蔵","shigure_(kancolle)|時雨","yuudachi_(kancolle)|夕立","kashima_(kancolle)|鹿島","atago_(kancolle)|愛宕","takao_(kancolle)|高雄","haruna_(kancolle)|榛名","kirishima_(kancolle)|霧島","nagato_(kancolle)|長門","zuikaku_(kancolle)|瑞鶴","shoukaku_(kancolle)|翔鶴","warspite_(kancolle)|ウォースパイト"]],
+["ポケモン","pokemon",["dawn_(pokemon)|ヒカリ","misty_(pokemon)|カスミ","may_(pokemon)|ハルカ","serena_(pokemon)|セレナ","lillie_(pokemon)|リーリエ","hilda_(pokemon)|トウコ","rosa_(pokemon)|メイ","gloria_(pokemon)|ユウリ","marnie_(pokemon)|マリィ","nessa_(pokemon)|ルリナ","cynthia_(pokemon)|シロナ","elesa_(pokemon)|カミツレ","skyla_(pokemon)|フウロ","sonia_(pokemon)|ソニア","juliana_(pokemon)|アオイ","nemona_(pokemon)|ネモ","iono_(pokemon)|ナンジャモ","lusamine_(pokemon)|ルザミーネ","bea_(pokemon)|サイトウ","melony_(pokemon)|メロン","pikachu|ピカチュウ","eevee|イーブイ","gardevoir|サーナイト","sylveon|ニンフィア","umbreon|ブラッキー","mimikyu|ミミッキュ"]],
+["ボカロ","vocaloid",["hatsune_miku|初音ミク","kagamine_rin|鏡音リン","megurine_luka|巡音ルカ","meiko_(vocaloid)|MEIKO","gumi|GUMI","ia_(vocaloid)|IA","kasane_teto|重音テト","yuzuki_yukari|結月ゆかり","zundamon|ずんだもん","otomachi_una|音街ウナ","flower_(vocaloid)|flower"]],
+["呪術廻戦","jujutsu_kaisen",["kugisaki_nobara|釘崎野薔薇","zenin_maki|禪院真希","zenin_mai|禪院真依","iori_utahime|庵歌姫","kasumi_miwa|三輪霞","ieiri_shoko|家入硝子","mei_mei_(jujutsu_kaisen)|冥冥","nishimiya_momo|西宮桃","tsukumo_yuki|九十九由基"]],
+["鬼滅の刃","kimetsu_no_yaiba",["kamado_nezuko|竈門禰豆子","kochou_shinobu|胡蝶しのぶ","tsuyuri_kanao|栗花落カナヲ","kanroji_mitsuri|甘露寺蜜璃","kochou_kanae|胡蝶カナエ","daki_(kimetsu_no_yaiba)|堕姫","tamayo_(kimetsu_no_yaiba)|珠世","makomo_(kimetsu_no_yaiba)|真菰","kanzaki_aoi|神崎アオイ"]],
+["チェンソーマン","chainsaw_man",["power_(chainsaw_man)|パワー","makima_(chainsaw_man)|マキマ","himeno_(chainsaw_man)|姫野","reze_(chainsaw_man)|レゼ","kobeni_higashiyama|東山コベニ","mitaka_asa|三鷹アサ","yoru_(chainsaw_man)|ヨル","quanxi_(chainsaw_man)|クァンシ","nayuta_(chainsaw_man)|ナユタ","fami_(chainsaw_man)|ファミ"]],
+["エヴァ","neon_genesis_evangelion",["ayanami_rei|綾波レイ","souryuu_asuka_langley|アスカ","makinami_mari_illustrious|マリ","katsuragi_misato|葛城ミサト","akagi_ritsuko|赤木リツコ","ibuki_maya|伊吹マヤ","horaki_hikari|洞木ヒカリ"]],
+["ハンターハンター","hunter_x_hunter",["machi_komacine|マチ","neferpitou|ネフェルピトー","biscuit_krueger|ビスケット","shizuku_murasaki|シズク","pakunoda|パクノダ","palm_siberia|パーム","alluka_zoldyck|アルカ","canary_(hunter_x_hunter)|カナリア"]]
+];
 const DEFAULT_SETTINGS={
   prefix:"masterpiece, best quality, very aesthetic, absurdres",
   suffix:"",
   negative:"lowres, worst quality, low quality, bad anatomy, bad hands, missing fingers, extra digits, jpeg artifacts, signature, watermark, username, blurry, text",
   escapeParens:true, underscore:false, batch:5,
-  autoFrame:true, frameFull:DEF_FULL, frameCowboy:DEF_COWBOY
+  autoFrame:true, frameFull:DEF_FULL, frameCowboy:DEF_COWBOY,
+  charSuppress:true,
+  charBlock:"髪の長さ, 髪型・毛流れ, 髪色, 目の形, 瞳の色, 瞳孔・光, 顔の特徴・ほくろ, 服装（メイン）, 種族・獣要素, 体型・雰囲気",
+  ng:"", dedupe:true,
+  lookGroups:"基本構成, 髪の長さ, 髪型・毛流れ, 髪色, 目の形, 瞳の色, 瞳孔・光, 顔の特徴・ほくろ, 眉, 種族・獣要素, 体型・雰囲気, 服装（メイン）, ボトムス・脚, 靴, 帽子・頭部, アクセサリー"
 };
+const ngSet=()=>new Set(String(D.settings.ng||"").split(/[,\n]/).map(s=>norm(s)).filter(Boolean));
 
 /* 出てるタグから「どこまで写ってるか」を判定してフレーミングタグを差し込む */
 function applyFrame(D,byGroup){
@@ -240,9 +275,14 @@ function applyFrame(D,byGroup){
 
 function buildDefaults(){
   const groups=DEF.map(([name,min,max,on,tags])=>({
-    id:uid(),name,min,max,on,req:false,mode:"roll",setOn:false,
+    id:uid(),name,min,max,on,req:false,mode:"roll",setOn:false,char:false,
     tags:tags.map(s=>{const[t,ja]=s.split("|");return{id:uid(),tag:t.trim(),ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false};})
   }));
+  for(const [jp,cp,list] of CHARS){
+    const tags=list.map(s=>{const[t,ja]=s.split("|");return{id:uid(),tag:t.trim().replace(/_/g," "),ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false};});
+    tags.push({id:uid(),tag:cp.replace(/_/g," "),ja:"作品タグ",w:1,emph:1,on:true,fix:true});
+    groups.push({id:uid(),name:jp,min:1,max:1,on:false,req:false,mode:"roll",setOn:false,char:true,tags});
+  }
   const gid=n=>(groups.find(g=>g.name===n)||{}).id;
   const tid=(gn,tn)=>{const g=groups.find(x=>x.name===gn);if(!g)return null;const t=g.tags.find(x=>x.tag===tn);return t?t.id:null;};
   const raw=[
@@ -250,7 +290,7 @@ function buildDefaults(){
      targets:[{k:"group",id:gid("瞳の色")},{k:"group",id:gid("瞳孔・光")},{k:"group",id:gid("視線")}]},
     {id:uid(),type:"exclude",dir:"a2b",a:{k:"tag",id:tid("構図・カメラ","from behind")},
      targets:[{k:"group",id:gid("表情")},{k:"group",id:gid("目の形")},{k:"group",id:gid("視線")},{k:"group",id:gid("瞳の色")},{k:"group",id:gid("顔の特徴・ほくろ")}]},
-    {id:uid(),type:"link",dir:"a2b",a:{k:"tag",id:tid("種族・獣要素","cat ears")},
+    {id:uid(),type:"link",dir:"a2b",qty:"one",a:{k:"tag",id:tid("種族・獣要素","cat ears")},
      targets:[{k:"tag",id:tid("種族・獣要素","cat tail")}]}
   ];
   return {groups,rules:raw.filter(r=>r.a.id&&r.targets.every(t=>t.id)),settings:{...DEFAULT_SETTINGS}};
@@ -269,7 +309,8 @@ function rollGroup(g,blocked,minOv){
   const hi=Math.max(lo,Math.max(g.min,g.max));
   const n=randInt(lo,hi);
   if(n<=0) return [];
-  const avail=g.tags.filter(t=>t.on&&!t.fix&&!blocked.has(t.id));
+  const NG=ngSet();
+  const avail=g.tags.filter(t=>t.on&&!t.fix&&!blocked.has(t.id)&&!NG.has(norm(t.tag)));
   const out=[];
   for(let i=0;i<n&&avail.length;i++){ const k=weightedIndex(avail); out.push(avail[k]); avail.splice(k,1); }
   return out;
@@ -295,6 +336,7 @@ function generate(D,locks,prev){
   locks=locks||{};
   const {bT,bG,fire}=makeBlocker(D);
   const byGroup={}, done=new Set();
+  let setCharHit=false;
   const emit=(g,picked)=>{
     byGroup[g.id]=[...(byGroup[g.id]||[]),...picked];
     picked.forEach(t=>fire({k:"tag",id:t.id}));
@@ -305,7 +347,7 @@ function generate(D,locks,prev){
     if(!g.on) continue;
     if(g.mode==="set"){
       done.add(g.id);
-      if(g.setOn) emit(g,g.tags.filter(t=>t.on));
+      if(g.setOn){ const on=g.tags.filter(t=>t.on); emit(g,on); if(g.char&&on.length) setCharHit=true; }
       else byGroup[g.id]=[];
       continue;
     }
@@ -318,8 +360,25 @@ function generate(D,locks,prev){
     const kept=prev.byGroup[g.id].filter(t=>g.tags.some(x=>x.id===t.id));
     byGroup[g.id]=[]; done.add(g.id); emit(g,kept);
   }
+  // 1.5) キャラグループを先に引く（当たったら容姿の抽選を止める）
+  let charHit=setCharHit;
+  for(const g of D.groups){
+    if(!g.on||!g.char||g.mode==="set"||done.has(g.id)) continue;
+    done.add(g.id);
+    if(bG.has(g.id)){ byGroup[g.id]=byGroup[g.id]||[]; continue; }
+    const pk=rollGroup(g,bT,g.req?Math.max(1,g.min):null);
+    emit(g,pk);
+    if(pk.length) charHit=true;
+  }
+  if(charHit&&D.settings.charSuppress){
+    for(const nm of String(D.settings.charBlock||"").split(",").map(s=>s.trim()).filter(Boolean)){
+      const g=D.groups.find(x=>x.name===nm&&!x.char);
+      if(g){ bG.add(g.id); g.tags.forEach(t=>bT.add(t.id)); byGroup[g.id]=[]; }
+    }
+  }
+
   // 2) 必須 → 通常
-  const order=[...D.groups.filter(g=>g.req&&g.mode!=="set"),...D.groups.filter(g=>!g.req&&g.mode!=="set")];
+  const order=[...D.groups.filter(g=>g.req&&g.mode!=="set"&&!g.char),...D.groups.filter(g=>!g.req&&g.mode!=="set"&&!g.char)];
   for(const g of order){
     if(!g.on||done.has(g.id)) continue;
     done.add(g.id);
@@ -333,8 +392,13 @@ function generate(D,locks,prev){
     const hasG=new Set(Object.entries(byGroup).filter(([,v])=>v.length).map(([k])=>k));
     for(const r of D.rules){
       if(r.type!=="link") continue;
-      const fired=r.a.k==="tag"?hasT.has(r.a.id):hasG.has(r.a.id);
+      let fired = r.a.k==="tag" ? hasT.has(r.a.id) : hasG.has(r.a.id);
+      if(r.a.k==="char" && !fired){
+        // 起点=キャラ：どれかキャラグループが当たっていれば発火
+        fired = D.groups.some(g=>g.char && (byGroup[g.id]||[]).some(t=>!t.fix));
+      }
       if(!fired) continue;
+      const qty = r.qty||"one";            // "one" | "all" | 数字文字列
       for(const tg of r.targets){
         if(tg.k==="tag"){
           if(hasT.has(tg.id)||bT.has(tg.id)) continue;
@@ -343,9 +407,20 @@ function generate(D,locks,prev){
           byGroup[g.id]=[...(byGroup[g.id]||[]),g.tags.find(x=>x.id===tg.id)]; ch=true;
         }else{
           const g=D.groups.find(x=>x.id===tg.id);
-          if(!g||bG.has(g.id)||(byGroup[g.id]||[]).length) continue;
-          const pk=rollGroup(g,bT,Math.max(1,g.min));
-          if(pk.length){ byGroup[g.id]=pk; ch=true; }
+          if(!g||bG.has(g.id)) continue;
+          const already=byGroup[g.id]||[];
+          if(qty==="all"){
+            // グループの全タグを入れる（固定は除外・NG/排他は尊重）
+            const NG=ngSet();
+            const add=g.tags.filter(t=>t.on&&!t.fix&&!bT.has(t.id)&&!NG.has(norm(t.tag))&&!already.some(x=>x.id===t.id));
+            if(add.length){ byGroup[g.id]=[...already,...add]; ch=true; }
+          }else if(already.length){
+            continue;   // one/N個：既に何か出てるなら触らない
+          }else{
+            const n = qty==="one" ? Math.max(1,g.min) : Math.max(1,parseInt(qty)||1);
+            const pk=rollGroup(g,bT,n);
+            if(pk.length){ byGroup[g.id]=pk.slice(0,n); ch=true; }
+          }
         }
       }
     }
@@ -381,10 +456,19 @@ function fmtTag(t,s){
   return out;
 }
 function toSegs(D,res){
-  const s=D.settings, segs=[];
-  if(s.prefix.trim()) segs.push({t:s.prefix.trim(),f:true});
-  if(res) for(const g of D.groups) (res.byGroup[g.id]||[]).forEach(t=>segs.push({t:fmtTag(t,s),f:!!t.fix}));
-  if(s.suffix.trim()) segs.push({t:s.suffix.trim(),f:true});
+  const s=D.settings, segs=[], NG=ngSet(), seen=new Set();
+  const add=(txt,fix)=>{
+    for(const part of String(txt).split(",").map(x=>x.trim()).filter(Boolean)){
+      const k=norm(part.replace(/^\(|:[\d.]+\)$/g,""));
+      if(NG.has(k)) continue;
+      if(s.dedupe&&seen.has(k)) continue;
+      seen.add(k);
+      segs.push({t:part,f:fix});
+    }
+  };
+  if(s.prefix.trim()) add(s.prefix,true);
+  if(res) for(const g of D.groups) (res.byGroup[g.id]||[]).forEach(t=>add(fmtTag(t,s),!!t.fix));
+  if(s.suffix.trim()) add(s.suffix,true);
   return segs;
 }
 function toPrompt(D,res){ return toSegs(D,res).map(x=>x.t).join(", "); }
@@ -422,6 +506,67 @@ function planImport(pool,D,o){
     keep.push({id:uid(),tag:name,ja:"",w:o.useWeight?logWeight(r.count):1,emph:1,on:true,fix:false,pc:r.count});
   }
   return {keep,skip};
+}
+
+/* ══════════ キャラ取込 ══════════ */
+const relURL=(q,lim)=>"https://danbooru.donmai.us/related_tag.json?query="+encodeURIComponent(q)+"&category=4&limit="+lim;
+const charAllURL=p=>"https://danbooru.donmai.us/tags.json?search[category]=4&search[order]=count&search[hide_empty]=yes&limit=1000&page="+p;
+const CH_PRESETS=[
+ ["blue_archive","ブルアカ"],["umamusume","ウマ娘"],["honkai:_star_rail","崩壊スターレイル"],["honkai_(series)","崩壊シリーズ"],
+ ["honkai_impact_3rd","崩壊3rd"],["pokemon","ポケモン"],["genshin_impact","原神"],["zenless_zone_zero","ゼンゼロ"],
+ ["touhou","東方"],["fate/grand_order","FGO"],["fate/stay_night","Fate/SN"],["arknights","アークナイツ"],
+ ["azur_lane","アズレン"],["girls'_frontline","ドルフロ"],["kantai_collection","艦これ"],["princess_connect!","プリコネ"],
+ ["granblue_fantasy","グラブル"],["goddess_of_victory:_nikke","ニケ"],["wuthering_waves","鳴潮"],["reverse:1999","リバース1999"],
+ ["limbus_company","リンバス"],["punishing:_gray_raven","パニグレ"],
+ ["hololive","ホロライブ"],["nijisanji","にじさんじ"],["vocaloid","ボカロ"],["idolmaster","アイマス"],
+ ["love_live!","ラブライブ"],["bang_dream!","バンドリ"],["project_sekai","プロセカ"],["precure","プリキュア"],
+ ["chainsaw_man","チェンソーマン"],["jujutsu_kaisen","呪術廻戦"],["kimetsu_no_yaiba","鬼滅の刃"],["one_piece","ワンピース"],
+ ["naruto_(series)","ナルト"],["bleach","ブリーチ"],["dragon_ball","ドラゴンボール"],["boku_no_hero_academia","ヒロアカ"],
+ ["spy_x_family","スパイファミリー"],["oshi_no_ko","推しの子"],["sousou_no_frieren","フリーレン"],["lycoris_recoil","リコリコ"],
+ ["bocchi_the_rock!","ぼざろ"],["shingeki_no_kyojin","進撃の巨人"],["jojo_no_kimyou_na_bouken","ジョジョ"],["hunter_x_hunter","ハンター"],
+ ["neon_genesis_evangelion","エヴァ"],["gundam","ガンダム"],["bishoujo_senshi_sailor_moon","セーラームーン"],["k-on!","けいおん"],
+ ["monogatari_(series)","物語シリーズ"],["steins;gate","シュタゲ"],["danganronpa_(series)","ダンガンロンパ"],["persona","ペルソナ"],
+ ["final_fantasy","FF"],["nier_(series)","ニーア"],["xenoblade_chronicles_(series)","ゼノブレイド"],["fire_emblem","FE"],
+ ["the_legend_of_zelda","ゼルダ"],["super_mario_bros.","マリオ"],["splatoon_(series)","スプラトゥーン"],["undertale","アンダーテール"],
+ ["street_fighter","ストV"],["guilty_gear","ギルティギア"],["league_of_legends","LoL"],["overwatch","オーバーウォッチ"],
+ ["girls_und_panzer","ガルパン"],["toaru_majutsu_no_index","とある魔術"],["sword_art_online","SAO"],["yu-gi-oh!","遊戯王"],
+ ["kono_subarashii_sekai_ni_shukufuku_wo!","このすば"],["re:zero_kara_hajimeru_isekai_seikatsu","リゼロ"]];
+
+/* related_tag.json / tags.json / posts.json  どの形でも拾える寛容パーサ */
+function harvestTags(any,wantCat){
+  const out=[],seen=new Set();
+  const push=(n,c,cat,dep)=>{ if(!n||seen.has(n))return; seen.add(n); out.push({name:n,count:Number(c)||0,cat:Number(cat),dep:!!dep}); };
+  const walk=o=>{
+    if(!o||typeof o!=="object") return;
+    if(Array.isArray(o)){ o.forEach(walk); return; }
+    if(typeof o.name==="string"&&(o.post_count!==undefined||o.category!==undefined)){
+      const cat=Number(o.category);
+      if(wantCat==null||cat===wantCat) push(o.name,o.post_count,cat,o.is_deprecated);
+    }
+    if(typeof o.tag_string_character==="string")
+      o.tag_string_character.split(/\s+/).filter(Boolean).forEach(n=>push(n,0,4,false));
+    for(const k of Object.keys(o)) if(o[k]&&typeof o[k]==="object") walk(o[k]);
+  };
+  walk(any);
+  return out;
+}
+const seriesOf=n=>{ const m=String(n).match(/\(([^)]+)\)/); return m?m[1].replace(/_/g," ").trim():null; };
+
+function planChars(pool,o){
+  const bySeries=new Map(), other=[], seen=new Set();
+  for(const r of pool){
+    if(r.dep||r.count<o.minCount) continue;
+    const name=r.name.replace(/_/g," ").trim(), key=norm(name);
+    if(!name||seen.has(key)) continue;
+    seen.add(key);
+    const s=seriesOf(r.name);
+    const it={name,count:r.count};
+    if(s){ if(!bySeries.has(s)) bySeries.set(s,[]); bySeries.get(s).push(it); }
+    else other.push(it);
+  }
+  for(const [s,arr] of [...bySeries]) if(arr.length<o.minChars){ other.push(...arr); bySeries.delete(s); }
+  const total=[...bySeries.values()].reduce((a,b)=>a+b.length,0)+other.length;
+  return {bySeries,other,total};
 }
 
 /* ══════════ 画像/プロンプト → 型 ══════════ */
@@ -500,7 +645,28 @@ const V={tab:"gen",result:null,locks:{},batchOut:[],toast:"",openG:{},limitG:{},
   impMode:"post",dbCat:"0",dbPages:5,dbPool:[],dbPaste:"",dbMin:1000,dbBlock:DEFAULT_BLOCK,
   dbWeight:true,dbTarget:"__new",dbNewName:"danbooru 取込",dbBusy:"",dbErr:"",
   pSrc:"",pBusy:"",pErr:"",pURL:"",pTags:null,pAuto:true,pPick:{},pNewName:"参考画像から",
+  chSeries:"blue_archive",chPages:2,chPool:[],chPaste:"",chBusy:"",chErr:"",histQ:"",reorder:false,moving:null,
+  chMin:300,chMinChars:3,chCopy:true,chAll:true,chWeight:true,hideOff:true,
   modal:null};
+
+const HIST_MAX=60;
+function pushHistory(){
+  if(!V.result) return;
+  const p=prompt();
+  if(!p) return;
+  D.history=D.history||[];
+  if(D.history[0]&&D.history[0].p===p) return;          // 同じものは連続で積まない
+  const snap={};
+  for(const g of D.groups){
+    const arr=V.result.byGroup[g.id]||[];
+    if(arr.length) snap[g.id]=arr.map(t=>({id:t.id,tag:t.tag,ja:t.ja||"",emph:t.emph||1,fix:!!t.fix}));
+  }
+  D.history.unshift({id:uid(),ts:Date.now(),p,fav:false,r:snap});
+  const favs=D.history.filter(x=>x.fav);
+  const rest=D.history.filter(x=>!x.fav).slice(0,HIST_MAX);
+  D.history=[...D.history.filter(x=>favs.includes(x)||rest.includes(x))];
+  persist();
+}
 
 let saveTimer=null;
 function persist(){
@@ -530,11 +696,39 @@ function fallbackCopy(text){
   }catch(e){ say("コピー不可。長押しで選択して"); }
 }
 
+/* ══════════ 予測変換（登録済みの単語から） ══════════ */
+function sugHTML(){
+  const cut=Math.max(V.bulk.lastIndexOf(","),V.bulk.lastIndexOf("\n"));
+  const tok=V.bulk.slice(cut+1).trim().toLowerCase();
+  if(tok.length<2) return "";
+  const head=[],mid=[],seen=new Set();
+  for(const g of D.groups){
+    for(const t of g.tags){
+      const k=t.tag.toLowerCase();
+      if(seen.has(k)) continue;
+      const ja=(t.ja||"").toLowerCase();
+      if(k.startsWith(tok)){ seen.add(k); head.push([t,g]); }
+      else if(k.includes(tok)||(ja&&ja.includes(tok))){ seen.add(k); mid.push([t,g]); }
+      if(head.length>=14) break;
+    }
+    if(head.length>=14) break;
+  }
+  const list=[...head,...mid].slice(0,14);
+  if(!list.length) return "";
+  return `<div class="mini" style="margin:6px 0 4px">候補（タップで入力）</div><div class="chips">`+
+    list.map(([t,g])=>`<button class="chip" data-act="sugPick" data-v="${esc(t.tag)}">${esc(t.tag)}`+
+      (t.ja?`<span class="ja">${esc(t.ja)}</span>`:"")+
+      `<span class="ja" style="color:var(--dim2)">${esc(g.name)}</span></button>`).join("")+`</div>`;
+}
+function refreshSug(){ const el=document.querySelector("[data-sug]"); if(el) el.innerHTML=sugHTML(); }
+
 /* ══════════ 描画 ══════════ */
 const sw=(on,act,d)=>`<button class="sw${on?" on":""}" data-act="${act}"${d||""}><i></i></button>`;
 const numOpts=v=>[0,1,2,3,4,5,6,7,8].map(n=>`<option value="${n}"${n==v?" selected":""}>${n}</option>`).join("");
 const refLabel=ref=>{
-  if(!ref||!ref.id) return "（不明）";
+  if(!ref) return "（不明）";
+  if(ref.k==="char") return "👤 どれかキャラ";
+  if(!ref.id) return "（不明）";
   if(ref.k==="group"){ const g=D.groups.find(x=>x.id===ref.id); return g?"［"+g.name+"］":"［削除済み］"; }
   for(const g of D.groups){ const t=g.tags.find(x=>x.id===ref.id); if(t) return t.tag; }
   return "（削除済み）";
@@ -553,7 +747,7 @@ function refreshOut(){
   const sv=$("save"); if(sv) sv.className="save"+(V.dirty?" on":"");
 }
 
-const TABS=[["gen","生成"],["groups","グループ"],["rules","ルール"],["import","取込"],["set","設定"]];
+const TABS=[["gen","生成"],["groups","グループ"],["rules","ルール"],["import","取込"],["hist","履歴"],["set","設定"]];
 
 function viewGen(){
   let h="";
@@ -587,11 +781,25 @@ function viewGen(){
     <div class="row" style="margin-bottom:8px"><div class="eb" style="margin:0">PROMPT</div><div class="sp"></div>
       <button class="btn" data-act="copyPrompt" style="padding:4px 8px;font-size:11px;color:${p?"var(--brass)":"var(--dim2)"};border-color:${p?"var(--brass)":"var(--rule)"}">コピー</button></div>
     <div class="out prompt">${outHTML()}</div>
-    <div class="mini" style="margin-top:8px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ<br>
+    <div class="row" style="margin-top:8px">
+      <span class="mini mono sp">${toSegs(D,V.result).length} tags · ${p.length} chars</span>
+      <button class="btn" data-act="lockAll" data-v="1" style="padding:4px 9px;font-size:11px">🔒 全ロック</button>
+      <button class="btn" data-act="lockAll" data-v="0" style="padding:4px 9px;font-size:11px">🔓 全解除</button>
+    </div>
+    <button class="btn lever full" data-act="saveLook" style="margin-top:8px;padding:11px"${V.result?"":" disabled"}>👤 この見た目をキャラとして保存</button>
+    <div class="mini" style="margin-top:5px">気に入った見た目が出たら押す。<b style="color:var(--txt)">髪・目・顔・服だけ抜き出して📌固定のセット枠</b>になります。以後はボタン1つでその子を呼び出して、ポーズ・背景・光だけガチャれる。</div>
+    <div class="mini" style="margin-top:6px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ<br>
       下のタグの <b style="color:var(--txt)">◀ ▶</b> で、その枠だけ単語を切り替えられます（blue eyes ▶ red eyes ▶ …）。<br>
       📌の固定タグも同じように回せます。</div>
   </div></div>`;
 
+  const offN=D.groups.filter(g=>!g.on).length;
+  if(offN){
+    h+=`<div class="row" style="padding:0 4px">
+      <span class="mini sp">OFFのグループ ${offN} 件</span>
+      <button class="btn" data-act="hideOff" style="padding:5px 10px;font-size:11px">${V.hideOff?"表示する":"隠す"}</button>
+    </div>`;
+  }
   const sets=D.groups.filter(g=>g.on&&g.mode==="set");
   if(sets.length){
     h+=`<div class="card"><div class="pad">
@@ -607,13 +815,14 @@ function viewGen(){
   for(const g of D.groups){
     if(g.mode==="set") continue;
     if(!g.on){
-      h+=`<div class="goff"><span class="sp">${esc(g.name)}</span><span class="mono" style="font-size:10px">OFF</span>${sw(false,"gOn",` data-id="${g.id}"`)}</div>`;
+      if(V.hideOff) continue;
+      h+=`<div class="goff"><span class="sp">${g.char?"👤 ":""}${esc(g.name)}</span><span class="mono" style="font-size:10px">${g.tags.length}</span>${sw(false,"gOn",` data-id="${g.id}"`)}</div>`;
       continue;
     }
     const picks=(V.result&&V.result.byGroup[g.id])||[];
     const locked=!!V.locks[g.id];
     h+=`<div class="gcard"><div class="ghead"${picks.length?' style="border-bottom:1px solid var(--rule)"':""}>
-      ${g.req?'<span style="font-size:11px;flex:none">📌</span>':""}
+      ${g.char?'<span style="font-size:11px;flex:none">👤</span>':""}${g.req?'<span style="font-size:11px;flex:none">📌</span>':""}
       <span class="gname">${esc(g.name)}</span>
       <select data-sel="gmin" data-id="${g.id}">${numOpts(g.min)}</select>
       <span style="color:var(--dim2);font-size:11px">〜</span>
@@ -652,9 +861,51 @@ function viewGen(){
   return h;
 }
 
+function viewReorder(){
+  let h=`<div class="row" style="gap:8px">
+    <div class="sp"><b style="font-size:13px">⇅ 並び替え</b>
+      <div class="mini">上のグループほど<b style="color:var(--txt)">先に抽選され</b>、<b style="color:var(--txt)">プロンプトでも先に出ます</b>。排他ルールでも上が勝ちます。</div></div>
+    <button class="btn lever" data-act="reorder">完了</button>
+  </div>`;
+
+  if(V.moving){
+    const g=G(V.moving);
+    h+=`<div class="card hi"><div class="pad" style="padding:10px 12px">
+      <div class="row">
+        <span class="sp" style="font-size:13px;color:var(--brass);font-weight:700">「${esc(g?g.name:"")}」を移動中</span>
+        <button class="btn" data-act="dropEnd" style="padding:5px 9px;font-size:11px">最後尾へ</button>
+        <button class="btn" data-act="cancelMove" style="padding:5px 9px;font-size:11px">やめる</button>
+      </div>
+      <div class="mini" style="margin-top:4px">挿入したい位置のグループを<b style="color:var(--txt)">タップ</b>（その直前に入ります）</div>
+    </div></div>`;
+  }
+
+  h+=`<div class="col" style="gap:5px">`;
+  D.groups.forEach((g,i)=>{
+    const held=V.moving===g.id;
+    const drop=V.moving&&!held;
+    const icon=g.char?"👤":g.mode==="set"?"📦":g.req?"📌":"";
+    h+=`<div class="rr${held?" held":""}${drop?" drop":""}"${drop?` data-act="dropAt" data-id="${g.id}"`:""}>
+      <span class="no">${i+1}</span>
+      <button class="grab" data-act="pick" data-id="${g.id}">☰</button>
+      <span class="nm" style="color:${g.on?"var(--txt)":"var(--dim2)"}">${icon}${icon?" ":""}${esc(g.name)}</span>
+      <span class="mono" style="font-size:10px;color:var(--dim2);flex:none">${g.tags.length}</span>
+      <button data-act="gTop" data-id="${g.id}">⤒</button>
+      <button data-act="moveUp" data-i="${i}">▲</button>
+      <button data-act="moveDn" data-i="${i}">▼</button>
+      <button data-act="gBottom" data-id="${g.id}">⤓</button>
+    </div>`;
+  });
+  return h+`</div>`;
+}
+
 function viewGroups(){
+  if(V.reorder) return viewReorder();
   const lq=V.q.trim().toLowerCase();
-  let h=`<div class="row" style="background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:0 12px">
+  let h=`<div class="row" style="gap:8px;margin-bottom:2px">
+    <button class="btn solid full" data-act="reorder">⇅ 並び替え（${D.groups.length}グループ）</button>
+  </div>
+  <div class="row" style="background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:0 12px">
     <span style="color:var(--dim2)">🔍</span>
     <input type="text" data-inp="q" data-k="q" placeholder="単語を検索（英語・日本語）" value="${esc(V.q)}"
       style="background:none;border:0;padding:10px 0">
@@ -728,6 +979,7 @@ ${isSet?"":`
           <div class="muted"><b style="color:var(--brass)">カンマ「,」区切り</b>でまとめて貼れます（改行でもOK）。<br>
             <span class="mono" style="color:var(--tag)">tag|メモ</span> で日本語メモも付けられます。</div>
           <textarea rows="4" data-inp="bulk" data-k="bulk" placeholder="long hair, twintails, blue eyes&#10;&#10;cat ears|猫耳, fox ears|狐耳">${esc(V.bulk)}</textarea>
+          <div data-sug>${sugHTML()}</div>
           <label class="row" style="font-size:12px;color:var(--dim)">
             <button class="cb${V.bulkComma?" on":""}" data-act="bulkComma">${V.bulkComma?"✓":""}</button>カンマ「,」でも区切る</label>
           <div class="row" style="gap:8px">
@@ -751,14 +1003,24 @@ function viewRules(){
   let h=`<div class="card"><div class="pad muted">
     <b style="color:var(--ng)">排他</b> = これが出たら、あれは出さない。<br>
     <b style="color:var(--link)">連動</b> = これが出たら、あれも一緒に出す。<br>
-    起点も対象も、<span class="mono" style="color:var(--tag)">単語</span> でも <b>［グループ］</b> でも指定できます。
+    起点は <span class="mono" style="color:var(--tag)">単語</span>・<b>［グループ］</b>・<b>👤キャラ</b> から、対象は 単語・グループ から選べます。<br>
+    連動でグループを対象にすると、<b style="color:var(--link)">1個 / 2個 / 3個 / 全部</b> の量を選べます。
   </div></div>`;
-  if(!D.rules.length) h+=`<div class="ph">ルールはまだありません。<br>下のボタンから1つ作ってみてください。</div>`;
+  h+=`<div class="card"><div class="pad col">
+    <div class="eb">よく使うルールをワンタップ追加</div>
+    <button class="btn full" data-act="rulePreset" data-p="catset">🐱 猫耳が出たら → 猫尻尾＋耳のもふもふも出す</button>
+    <button class="btn full" data-act="rulePreset" data-p="closedeyes">😌 目を閉じたら → 瞳の色・視線を出さない</button>
+    <button class="btn full" data-act="rulePreset" data-p="behind">🔙 後ろ姿なら → 顔まわりを全部出さない</button>
+    <button class="btn full" data-act="rulePreset" data-p="charframe">👤 キャラが出たら → 全身(full body)を出す</button>
+    <div class="mini">押すと下にルールが増えます。中身はタップして編集できます。</div>
+  </div></div>`;
+  if(!D.rules.length) h+=`<div class="ph">下の「＋ ルールを追加」か、上のワンタップから作れます。</div>`;
   for(const r of D.rules){
     const ex=r.type==="exclude";
+    const ql = !ex ? (r.qty==="all"?" ・全部":r.qty==="2"?" ・2個":r.qty==="3"?" ・3個":"") : "";
     h+=`<button class="rule-item ${ex?"ex":"lk"}" data-act="editRule" data-id="${r.id}">
       <div class="row" style="margin-bottom:8px">
-        <span class="badge" style="color:${ex?"var(--ng)":"var(--link)"}">${ex?(r.dir==="both"?"排他 ⟷ 双方向":"排他 → 片方向"):"連動 →"}</span>
+        <span class="badge" style="color:${ex?"var(--ng)":"var(--link)"}">${ex?(r.dir==="both"?"排他 ⟷ 双方向":"排他 → 片方向"):"連動 →"+ql}</span>
         <div class="sp"></div><span style="color:var(--dim2)">✎</span>
       </div>
       <div class="chips">
@@ -772,10 +1034,94 @@ function viewRules(){
 }
 
 function viewImport(){
-  let h=`<div class="row" style="gap:8px">
-    <button class="btn full ${V.impMode==="post"?"solid":""}" data-act="impMode" data-m="post">🪄 画像・プロンプト</button>
-    <button class="btn full ${V.impMode==="dict"?"solid":""}" data-act="impMode" data-m="dict">📚 タグ辞書</button>
+  let h=`<div class="row" style="gap:6px">
+    <button class="btn full ${V.impMode==="char"?"solid":""}" data-act="impMode" data-m="char">👤 キャラ</button>
+    <button class="btn full ${V.impMode==="post"?"solid":""}" data-act="impMode" data-m="post">🪄 画像</button>
+    <button class="btn full ${V.impMode==="dict"?"solid":""}" data-act="impMode" data-m="dict">📚 辞書</button>
   </div>`;
+
+  if(V.impMode==="char"){
+    h+=`<div class="card"><div class="pad muted">
+      danbooru のキャラタグを<b style="color:var(--brass)">作品ごとのグループ</b>にして取り込みます。<br>
+      作品を指定して取るか、人気キャラを丸ごと取って自動で仕分けるか。知らんキャラも入る。
+    </div></div>
+
+    <div class="card"><div class="pad col">
+      <div class="row"><span class="mono" style="font-size:11px;color:var(--brass);font-weight:700">A</span><b style="font-size:13px">作品を指定して取る</b></div>
+      <input type="text" class="mono" data-inp="chSeries" data-k="chs" value="${esc(V.chSeries)}" placeholder="genshin_impact">
+      <div class="chips" style="max-height:132px;overflow-y:auto">${CH_PRESETS.map(([v,l])=>
+        `<button class="chip${V.chSeries===v?" fix":""}" data-act="chPre" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>
+      <button class="btn lever full" data-act="chFetch"${V.chBusy?" disabled":""}>⇩ ${V.chBusy||"このキャラを取ってくる"}</button>
+      <div class="out" style="min-height:0;font-size:10.5px">${esc(relURL(V.chSeries,200))}</div>
+      <div class="row" style="gap:8px">
+        <button class="btn full" data-act="chCopyURL">URLをコピー</button>
+        <a class="btn full" href="${esc(relURL(V.chSeries,200))}" target="_blank" rel="noreferrer" style="text-decoration:none">開く ↗</a>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="pad col">
+      <div class="row"><span class="mono" style="font-size:11px;color:var(--brass);font-weight:700">B</span>
+        <b class="sp" style="font-size:13px">人気キャラを丸ごと取る</b></div>
+      <div class="mini">作品名は <span class="mono" style="color:var(--tag)">ganyu (genshin impact)</span> のようにタグ名に埋まってるので、自動で作品ごとに仕分けます。</div>
+      <div class="row"><span style="font-size:12px;color:var(--dim)">ページ数</span>
+        <input type="number" min="1" max="10" value="${V.chPages}" data-inp="chPages">
+        <span class="mini">× 1000 = 上位 ${V.chPages*1000} キャラ</span></div>
+      <button class="btn lever full" data-act="chFetchAll"${V.chBusy?" disabled":""}>⇩ ${V.chBusy||"人気キャラを取ってくる"}</button>
+      <div class="out" style="min-height:0;font-size:10.5px">${esc(charAllURL(1))}</div>
+      <div class="row" style="gap:8px">
+        <button class="btn full" data-act="chCopyAllURL">URLをコピー</button>
+        <a class="btn full" href="${esc(charAllURL(1))}" target="_blank" rel="noreferrer" style="text-decoration:none">開く ↗</a>
+      </div>
+      ${V.chErr?`<div class="err">${esc(V.chErr)}</div>`:""}
+      <textarea rows="3" data-inp="chPaste" data-k="chp" placeholder="開いたJSONを全選択コピーして、ここに貼る">${esc(V.chPaste)}</textarea>
+      <button class="btn solid full" data-act="chParse"${V.chPaste.trim()?"":" disabled"}>⇧ 貼り付けたJSONを読む</button>
+    </div></div>`;
+
+    const has=V.chPool.length;
+    h+=`<div class="card${has?" hi":""}"><div class="pad col">
+      <div class="row"><span style="flex:none">🔎</span><b class="sp" style="font-size:13px">ふるいにかけて取り込む</b>
+        <span class="mono" style="font-size:11px;color:${has?"var(--tag)":"var(--dim2)"}">取得 ${has} 人</span></div>`;
+    if(!has){ h+=`<div class="ph">まだ何も取ってきてません</div></div></div>`; return h; }
+
+    const pc=planChars(V.chPool,{minCount:V.chMin,minChars:V.chMinChars});
+    h+=`<div class="row"><span style="font-size:12px;color:var(--dim)">最小ポスト数</span>
+        <input type="number" min="0" step="100" value="${V.chMin}" data-inp="chMin" style="width:92px"></div>
+      <div class="row"><span style="font-size:12px;color:var(--dim)">1作品の最低キャラ数</span>
+        <input type="number" min="1" max="20" value="${V.chMinChars}" data-inp="chMinChars" style="width:70px">
+        <span class="mini">未満は「その他キャラ」へ</span></div>
+
+      <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+        <div class="sp"><div style="font-size:12px;font-weight:700">作品タグも一緒に出す</div>
+          <div class="mini">📌固定で <span class="mono">genshin impact</span> が必ず付く</div></div>${sw(V.chCopy,"chCopy")}</div>
+      <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+        <div class="sp"><div style="font-size:12px;font-weight:700">「全キャラ」グループも作る</div>
+          <div class="mini">作品不問で全員から1人ランダム</div></div>${sw(V.chAll,"chAll")}</div>
+      <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+        <div class="sp"><div style="font-size:12px;font-weight:700">ポスト数を抽選ウェイトに</div>
+          <div class="mini">有名キャラほど出やすくなる</div></div>${sw(V.chWeight,"chWeight")}</div>
+
+      <div style="background:var(--ink);border:1px solid var(--rule2);border-radius:8px;padding:12px">
+        <div style="margin-bottom:6px">
+          <span class="mono" style="font-size:22px;font-weight:800;color:var(--brass)">${pc.bySeries.size}</span>
+          <span style="font-size:12px;color:var(--dim)"> 作品 / </span>
+          <span class="mono" style="font-size:22px;font-weight:800;color:var(--brass)">${pc.total}</span>
+          <span style="font-size:12px;color:var(--dim)"> キャラ</span></div>
+        <div class="chips">${[...pc.bySeries].sort((a,b)=>b[1].length-a[1].length).slice(0,20)
+          .map(([s,a])=>`<span class="chip">${esc(s)}<span class="ja">${a.length}</span></span>`).join("")}
+          ${pc.other.length?`<span class="chip off">その他<span class="ja">${pc.other.length}</span></span>`:""}</div>
+      </div>
+
+      <div class="warn" style="padding:10px 12px">取り込んだキャラグループは<b style="color:var(--txt)">最初はOFF</b>です。生成タブで使いたい作品だけONに。<br>
+        キャラが当たると<b style="color:var(--txt)">髪・目・服・体型の抽選は自動で止まります</b>（設定タブで解除可）。</div>
+
+      <div class="row" style="gap:8px">
+        <button class="btn" data-act="chClear">捨てる</button>
+        <button class="btn lever full" data-act="chCommit"${pc.total?"":" disabled"}>＋ ${pc.total} キャラを取り込む</button>
+      </div>
+    </div></div>`;
+    return h;
+  }
+
 
   if(V.impMode==="post"){
     h+=`<div class="card"><div class="pad muted">
@@ -915,6 +1261,36 @@ function viewImport(){
   return h;
 }
 
+function viewHist(){
+  const hs=D.history||[];
+  const q=(V.histQ||"").trim().toLowerCase();
+  const list=hs.filter(x=>!q||x.p.toLowerCase().includes(q));
+  let h=`<div class="row" style="background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:0 12px">
+    <span style="color:var(--dim2)">🔍</span>
+    <input type="text" data-inp="histQ" data-k="hq" placeholder="履歴を検索" value="${esc(V.histQ||"")}" style="background:none;border:0;padding:10px 0">
+  </div>`;
+  if(!hs.length) return h+`<div class="ph">まだ履歴がありません。<br>「抽選する」を押すと自動で溜まります。</div>`;
+  h+=`<div class="row" style="gap:8px">
+    <span class="mini sp">${list.length} 件${hs.filter(x=>x.fav).length?` / ★${hs.filter(x=>x.fav).length}`:""}</span>
+    <button class="btn ng" data-act="histClear" style="padding:5px 10px;font-size:11px">★以外を全消し</button>
+  </div>`;
+  for(const it of list.slice(0,80)){
+    const d=new Date(it.ts);
+    const tm=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    h+=`<div class="card"${it.fav?' style="border-color:var(--brass)"':""}><div class="pad" style="padding:10px 12px">
+      <div class="row" style="margin-bottom:6px">
+        <button data-act="histFav" data-id="${it.id}" style="font-size:15px;flex:none;color:${it.fav?"var(--brass)":"var(--dim2)"}">${it.fav?"★":"☆"}</button>
+        <span class="mini sp mono">${tm}</span>
+        <button class="btn" data-act="histCopy" data-id="${it.id}" style="padding:4px 9px;font-size:11px">コピー</button>
+        <button class="btn solid" data-act="histLoad" data-id="${it.id}" style="padding:4px 9px;font-size:11px">呼び戻す</button>
+        <button data-act="histDel" data-id="${it.id}" style="color:var(--ng);flex:none">🗑</button>
+      </div>
+      <div class="mono" style="font-size:11px;line-height:1.7;color:var(--tag);word-break:break-word;-webkit-user-select:text;user-select:text">${esc(it.p)}</div>
+    </div></div>`;
+  }
+  return h;
+}
+
 function viewSet(){
   const s=D.settings, st=stats();
   return `<div class="card"><div class="pad col">
@@ -923,6 +1299,25 @@ function viewSet(){
     <div><div class="row"><div class="eb sp" style="margin:0">ネガティブプロンプト</div>
       <button data-act="copyNeg" style="font-size:11px;color:var(--brass);font-weight:700">コピー</button></div>
       <textarea rows="3" data-inp="negative" data-k="ng" style="color:var(--dim);margin-top:5px">${esc(s.negative)}</textarea></div>
+  </div></div>
+
+  <div class="card"><div class="pad col">
+    <div><div class="eb">NGタグ（絶対に出さない・カンマ区切り）</div>
+      <textarea rows="2" data-inp="ng" data-k="ngt" placeholder="出したくない単語を書くと、抽選からも出力からも消えます">${esc(s.ng)}</textarea></div>
+    <div class="row"><div class="sp"><div style="font-size:13px;font-weight:700">重複タグを除去</div>
+      <div class="mini">別グループから同じ単語が出ても1回だけにする</div></div>${sw(s.dedupe,"dedupe")}</div>
+  </div></div>
+
+  <div class="card"><div class="pad col">
+    <div class="row"><span style="flex:none">👤</span>
+      <div class="sp"><div style="font-size:13px;font-weight:700">キャラが出たら容姿の抽選を止める</div>
+        <div class="mini">キャラには決まった髪型・目・服があるので、被らせない</div></div>
+      ${sw(s.charSuppress,"charSup")}</div>
+    ${s.charSuppress?`<div><div class="eb">止めるグループ名（カンマ区切り）</div>
+      <textarea rows="3" data-inp="charBlock" data-k="cb">${esc(s.charBlock)}</textarea></div>`:""}
+    <div><div class="eb">「見た目を保存」で抜き出すグループ</div>
+      <textarea rows="3" data-inp="lookGroups" data-k="lg">${esc(s.lookGroups)}</textarea>
+      <div class="mini" style="margin-top:4px">ここに書いたグループの結果だけがキャラになります（ポーズ・背景・光は入らない）。</div></div>
   </div></div>
 
   <div class="card"><div class="pad col">
@@ -950,7 +1345,7 @@ function viewSet(){
 
   <div class="card"><div class="pad col">
     <div class="eb">バックアップ</div>
-    <div class="mini"><b style="color:var(--brass)">バージョン v1.5 · 07/14</b><br>
+    <div class="mini"><b style="color:var(--brass)">バージョン v2.1 · 07/14</b><br>
       グループ ${st.g} / 単語 ${st.t} / ルール ${st.r}。<br>
       ${canStore?"変更はこの端末に自動保存されます。":'<b style="color:var(--ng)">この環境では自動保存が効きません。必ずJSONを書き出して。</b>'}</div>
     <div class="row" style="gap:8px">
@@ -960,6 +1355,9 @@ function viewSet(){
     <input type="file" accept="application/json,.json" data-inp="file">
     <textarea rows="3" data-inp="impText" data-k="imp" placeholder="JSONを貼り付けて読み込むこともできます">${esc(V.impText)}</textarea>
     <button class="btn solid full" data-act="restore"${V.impText.trim()?"":" disabled"}>⇧ 貼り付けたJSONを読み込む</button>
+    <div style="height:1px;background:var(--rule)"></div>
+    <button class="btn solid full" data-act="resyncChars">👤 同梱キャラを最新版に差し替え</button>
+    <div class="mini">アプリを更新したとき用。<b style="color:var(--txt)">自作グループ・保存キャラ・取り込んだキャラは残ります。</b>ON/OFFの状態も引き継ぎます。</div>
     <div style="height:1px;background:var(--rule)"></div>
     <button class="btn ng full" data-act="reset">↺ デフォルトに戻す</button>
   </div></div>`;
@@ -1097,7 +1495,7 @@ function render_(){
   let body="";
   if(V.toast) body+=`<div class="toast">✦ ${esc(V.toast)}</div>`;
   body+= V.tab==="gen"?viewGen(): V.tab==="groups"?viewGroups(): V.tab==="rules"?viewRules():
-         V.tab==="import"?viewImport(): viewSet();
+         V.tab==="import"?viewImport(): V.tab==="hist"?viewHist(): viewSet();
   $("app").innerHTML=body;
 
   $("lever").innerHTML = V.tab==="gen"
@@ -1135,7 +1533,7 @@ const ACT={
       const d=JSON.parse(V.impText);
       if(!d.groups||!d.groups.length) throw 0;
       d.settings={...DEFAULT_SETTINGS,...(d.settings||{})};
-      d.rules=d.rules||[];
+      d.rules=d.rules||[]; d.history=d.history||[];
       D=d; V.result=null; V.locks={}; V.impText=""; V.fresh=false;
       persist(); say("復元しました"); render();
     }catch(e){ say("JSONの形式が違います"); }
@@ -1145,7 +1543,70 @@ const ACT={
   dismissFresh:()=>{ V.fresh=false; render(); },
   toggleFixBox:()=>{ V.fixOpen=!V.fixOpen; render(); },
 
-  roll:()=>{ V.result=generate(D,V.locks,V.result); render(); },
+  roll:()=>{ V.result=generate(D,V.locks,V.result); pushHistory(); render(); },
+  resyncChars:()=>{ V.modal={type:"confirm",msg:"同梱キャラのリストを最新版に差し替えます。\n自分で追加したグループ・保存キャラ・取り込んだキャラは残ります。",yes:"resyncChars2"}; render(); },
+  resyncChars2:()=>mutate(()=>{
+    const names=new Set(CHARS.map(c=>c[0]));
+    const prevOn={};
+    let at=D.groups.findIndex(g=>g.char&&!g.look&&names.has(g.name));
+    D.groups.forEach(g=>{ if(g.char&&!g.look&&names.has(g.name)) prevOn[g.name]=g.on; });
+    D.groups=D.groups.filter(g=>!(g.char&&!g.look&&names.has(g.name)));
+    if(at<0) at=D.groups.length;
+    const fresh=CHARS.map(([jp,cp,list])=>{
+      const tags=list.map(s=>{const[t,ja]=s.split("|");return{id:uid(),tag:t.trim().replace(/_/g," "),ja:(ja||"").trim(),w:1,emph:1,on:true,fix:false};});
+      tags.push({id:uid(),tag:cp.replace(/_/g," "),ja:"作品タグ",w:1,emph:1,on:true,fix:true});
+      return {id:uid(),name:jp,min:1,max:1,on:!!prevOn[jp],req:false,mode:"roll",setOn:false,char:true,look:false,tags};
+    });
+    D.groups.splice(at,0,...fresh);
+    pruneRules();
+    V.toast=`同梱キャラを差し替えました（${CHARS.length}作品）`;
+  }),
+  saveLook:()=>{
+    if(!V.result){ say("先に「抽選する」を押して"); return; }
+    const keep=new Set(String(D.settings.lookGroups||"").split(",").map(s=>s.trim()).filter(Boolean));
+    const tags=[], seen=new Set();
+    for(const g of D.groups){
+      if(g.look) continue;
+      if(!keep.has(g.name)&&!g.char) continue;
+      for(const t of (V.result.byGroup[g.id]||[])){
+        const k=norm(t.tag);
+        if(seen.has(k)) continue;
+        seen.add(k);
+        tags.push({id:uid(),tag:t.tag,ja:t.ja||"",w:1,emph:Number(t.emph)||1,on:true,fix:true});
+      }
+    }
+    if(!tags.length){ say("外見タグが見つかりません"); return; }
+    const dt=new Date();
+    const nm=`保存キャラ ${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`;
+    mutate(()=>{
+      const g={id:uid(),name:nm,min:0,max:0,on:true,req:false,mode:"set",setOn:true,char:true,look:true,tags};
+      D.groups.forEach(x=>{ if(x.char&&x.mode==="set") x.setOn=false; });
+      g.setOn=true;
+      D.groups.splice(1,0,g);
+      V.result=generate(D,V.locks,V.result);
+      V.toast=tags.length+"個の外見タグを保存しました";
+    });
+  },
+  lockAll:(d)=>{
+    V.locks={};
+    if(d.v==="1") for(const g of D.groups) if(g.on&&g.mode!=="set") V.locks[g.id]=true;
+    render();
+  },
+  histFav:(d)=>mutate(()=>{ const it=D.history.find(x=>x.id===d.id); if(it) it.fav=!it.fav; }),
+  histDel:(d)=>mutate(()=>{ D.history=D.history.filter(x=>x.id!==d.id); }),
+  histCopy:(d)=>{ const it=(D.history||[]).find(x=>x.id===d.id); if(it) copy(it.p); },
+  histLoad:(d)=>{
+    const it=(D.history||[]).find(x=>x.id===d.id);
+    if(!it) return;
+    V.result={byGroup:JSON.parse(JSON.stringify(it.r))};
+    V.locks={};
+    Object.keys(it.r).forEach(k=>{ V.locks[k]=true; });
+    V.tab="gen"; say("呼び戻しました（全ロック済み）");
+    window.scrollTo(0,0);
+  },
+  histClear:()=>{ V.modal={type:"confirm",msg:"★を付けてない履歴を全部消します。",yes:"histClear2"}; render(); },
+  histClear2:()=>mutate(()=>{ D.history=(D.history||[]).filter(x=>x.fav); }),
+  dedupe:()=>mutate(()=>{ D.settings.dedupe=!D.settings.dedupe; }),
   reroll:(d)=>{ V.result=V.result?rerollOne(D,V.result,d.id):generate(D,{},null); render(); },
   lock:(d)=>{ V.locks[d.id]=!V.locks[d.id]; render(); },
   dropTag:(d)=>{ if(!V.result) return;
@@ -1168,6 +1629,7 @@ const ACT={
   setToggle:(d)=>{
     const g=G(d.id);
     g.setOn=!g.setOn;
+    if(g.setOn&&g.char) D.groups.forEach(x=>{ if(x.char&&x.mode==="set"&&x.id!==g.id&&x.setOn){ x.setOn=false; if(V.result) V.result.byGroup[x.id]=[]; } });
     if(!V.result) V.result={byGroup:{}};
     V.result={byGroup:{...V.result.byGroup,[g.id]: g.setOn ? g.tags.filter(t=>t.on) : []}};
     V.dirty=true; persist(); render();
@@ -1191,6 +1653,30 @@ const ACT={
     render();
   },
   toggleG:(d)=>{ V.openG[d.id]=!V.openG[d.id]; render(); },
+  reorder:()=>{ V.reorder=!V.reorder; V.moving=null; render(); window.scrollTo(0,0); },
+  pick:(d)=>{ V.moving = V.moving===d.id ? null : d.id; render(); },
+  cancelMove:()=>{ V.moving=null; render(); },
+  dropAt:(d)=>{
+    if(!V.moving||V.moving===d.id){ V.moving=null; render(); return; }
+    mutate(()=>{
+      const from=D.groups.findIndex(g=>g.id===V.moving);
+      const [g]=D.groups.splice(from,1);
+      const to=D.groups.findIndex(x=>x.id===d.id);
+      D.groups.splice(to<0?D.groups.length:to,0,g);
+      V.moving=null;
+    });
+  },
+  dropEnd:()=>{
+    if(!V.moving) return;
+    mutate(()=>{
+      const i=D.groups.findIndex(g=>g.id===V.moving);
+      const [g]=D.groups.splice(i,1);
+      D.groups.push(g);
+      V.moving=null;
+    });
+  },
+  gTop:(d)=>mutate(()=>{ const i=D.groups.findIndex(g=>g.id===d.id); const [g]=D.groups.splice(i,1); D.groups.unshift(g); }),
+  gBottom:(d)=>mutate(()=>{ const i=D.groups.findIndex(g=>g.id===d.id); const [g]=D.groups.splice(i,1); D.groups.push(g); }),
   moveUp:(d)=>mutate(()=>{ const i=+d.i; if(i>0){ const a=D.groups; [a[i-1],a[i]]=[a[i],a[i-1]]; } }),
   moveDn:(d)=>mutate(()=>{ const i=+d.i; const a=D.groups; if(i<a.length-1){ [a[i+1],a[i]]=[a[i],a[i+1]]; } }),
   delG:(d)=>{ V.modal={type:"confirm",msg:"「"+G(d.id).name+"」を削除します。",yes:"delG2",id:d.id}; render(); },
@@ -1204,8 +1690,15 @@ const ACT={
   openAdd:(d)=>{ V.addTo=d.id; V.bulk=""; render(); },
   cancelAdd:()=>{ V.addTo=null; V.bulk=""; render(); },
   bulkComma:()=>{ V.bulkComma=!V.bulkComma; render(); },
+  sugPick:(d)=>{
+    const cut=Math.max(V.bulk.lastIndexOf(","),V.bulk.lastIndexOf("\n"));
+    V.bulk=(cut>=0?V.bulk.slice(0,cut+1)+" ":"")+d.v+", ";
+    render();
+    const el=document.querySelector('[data-k="bulk"]');
+    if(el){ el.focus(); try{ el.setSelectionRange(el.value.length,el.value.length); }catch(e){} }
+  },
   doAdd:(d)=>{
-    const rows=V.bulk.split(V.bulkComma?/[\n,]/:/\n/).map(s=>s.trim()).filter(Boolean);
+    const rows=V.bulk.split(V.bulkComma?/[\n]/:/\n/).map(s=>s.trim()).filter(Boolean);
     if(!rows.length) return;
     mutate(()=>{
       const g=G(d.id);
@@ -1226,18 +1719,45 @@ const ACT={
   mFix:()=>mutate(()=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.fix=!t.fix; }),
   delTag:()=>mutate(()=>{ const g=G(V.modal.gid); g.tags=g.tags.filter(t=>t.id!==V.modal.tid); pruneRules(); V.modal=null; }),
 
-  newRule:()=>{ V.modal={type:"rule",isNew:true,draft:{id:uid(),type:"exclude",dir:"both",a:null,targets:[]}}; render(); },
+  rulePreset:(d)=>{
+    const gid=nm=>{ const g=D.groups.find(x=>x.name===nm); return g?g.id:null; };
+    const tid=(gn,tn)=>{ const g=D.groups.find(x=>x.name===gn); if(!g) return null; const t=g.tags.find(x=>norm(x.tag)===norm(tn)); return t?t.id:null; };
+    let rule=null;
+    if(d.p==="catset"){
+      const a=tid("種族・獣要素","cat ears");
+      const tail=tid("種族・獣要素","cat tail"), fluff=tid("種族・獣要素","animal ear fluff");
+      if(a&&tail) rule={id:uid(),type:"link",dir:"a2b",qty:"one",a:{k:"tag",id:a},
+        targets:[{k:"tag",id:tail}].concat(fluff?[{k:"tag",id:fluff}]:[])};
+    }else if(d.p==="closedeyes"){
+      const a=tid("目の形","closed eyes");
+      if(a) rule={id:uid(),type:"exclude",dir:"a2b",a:{k:"tag",id:a},
+        targets:[gid("瞳の色"),gid("瞳孔・光"),gid("視線")].filter(Boolean).map(id=>({k:"group",id}))};
+    }else if(d.p==="behind"){
+      const a=tid("構図・カメラ","from behind");
+      if(a) rule={id:uid(),type:"exclude",dir:"a2b",a:{k:"tag",id:a},
+        targets:[gid("表情"),gid("目の形"),gid("視線"),gid("瞳の色"),gid("顔の特徴・ほくろ")].filter(Boolean).map(id=>({k:"group",id}))};
+    }else if(d.p==="charframe"){
+      const t=tid("構図・カメラ","full body");
+      if(t) rule={id:uid(),type:"link",dir:"a2b",qty:"one",a:{k:"char",id:"any"},targets:[{k:"tag",id:t}]};
+    }
+    if(!rule||!rule.a.id||!rule.targets.length){ say("必要なタグ/グループが見つかりません"); return; }
+    // 重複チェック（同じ起点・同じ種別）
+    if(D.rules.some(r=>r.type===rule.type&&JSON.stringify(r.a)===JSON.stringify(rule.a))){ say("似たルールが既にあります"); return; }
+    mutate(()=>{ D.rules.push(rule); V.toast="ルールを追加しました"; });
+  },
+  newRule:()=>{ V.modal={type:"rule",isNew:true,draft:{id:uid(),type:"exclude",dir:"both",qty:"one",a:null,targets:[]}}; render(); },
   editRule:(d)=>{ const r=D.rules.find(x=>x.id===d.id);
     V.modal={type:"rule",isNew:false,draft:JSON.parse(JSON.stringify(r))}; render(); },
-  rType:(d)=>{ V.modal.draft.type=d.v; if(d.v==="link") V.modal.draft.dir="a2b"; render(); },
+  rType:(d)=>{ V.modal.draft.type=d.v; if(d.v==="link"){ V.modal.draft.dir="a2b"; if(!V.modal.draft.qty) V.modal.draft.qty="one"; } render(); },
+  rQty:(d)=>{ V.modal.draft.qty=d.v; render(); },
   rDir:(d)=>{ V.modal.draft.dir=d.v; render(); },
   rmTarget:(d)=>{ V.modal.draft.targets.splice(+d.i,1); render(); },
   pickA:()=>{ V.modal={...V.modal,ref:"a",_back:{...V.modal}}; V.modal={type:"ref",mode:"tag",q:"",back:V.modal._back,slot:"a"}; render(); },
   pickT:()=>{ V.modal={type:"ref",mode:"tag",q:"",back:{...V.modal},slot:"t"}; render(); },
-  refMode:(d)=>{ V.modal.mode=d.v; render(); },
+  refMode:(d)=>{ V.modal.mode=d.v; V.modal.q=""; render(); },
   refPick:(d)=>{
     const back=V.modal.back, slot=V.modal.slot;
-    const ref={k:d.k2,id:d.id};
+    const ref = d.k2==="char" ? {k:"char",id:"any"} : {k:d.k2,id:d.id};
     if(slot==="a") back.draft.a=ref;
     else if(!back.draft.targets.some(t=>t.k===ref.k&&t.id===ref.id)) back.draft.targets.push(ref);
     V.modal=back; render();
@@ -1251,6 +1771,83 @@ const ACT={
   delRule:()=>mutate(()=>{ D.rules=D.rules.filter(x=>x.id!==V.modal.draft.id); V.modal=null; }),
 
   impMode:(d)=>{ V.impMode=d.m; render(); },
+  chPre:(d)=>{ V.chSeries=d.v; render(); },
+  chCopyURL:()=>copy(relURL(V.chSeries,200)),
+  chCopyAllURL:()=>copy(charAllURL(1)),
+  chCopy:()=>{ V.chCopy=!V.chCopy; render(); },
+  chAll:()=>{ V.chAll=!V.chAll; render(); },
+  chWeight:()=>{ V.chWeight=!V.chWeight; render(); },
+  chClear:()=>{ V.chPool=[]; render(); },
+  chFetch:async()=>{
+    V.chErr=""; V.chBusy="取得中…"; render();
+    try{
+      const res=await fetch(relURL(V.chSeries,200));
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const rows=harvestTags(await res.json(),4);
+      if(!rows.length) throw new Error("キャラが見つかりません");
+      chAddPool(rows); V.chBusy=""; say(rows.length+"人を取得しました");
+    }catch(e){
+      V.chBusy="";
+      V.chErr="直接取得できませんでした（CORS制限か、作品タグが違う）。下のURLを開いてJSONを全部コピーし、貼り付け欄にペーストしてください。";
+      render();
+    }
+  },
+  chFetchAll:async()=>{
+    V.chErr=""; V.chBusy="接続中…"; render();
+    const rows=[];
+    try{
+      for(let p=1;p<=V.chPages;p++){
+        V.chBusy=`取得中… ${p}/${V.chPages}`; render();
+        const res=await fetch(charAllURL(p));
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const j=await res.json();
+        if(!Array.isArray(j)||!j.length) break;
+        rows.push(...harvestTags(j,4));
+        await new Promise(r=>setTimeout(r,350));
+      }
+      chAddPool(rows); V.chBusy=""; say(rows.length+"人を取得しました");
+    }catch(e){
+      V.chBusy="";
+      V.chErr="直接取得できませんでした（CORS制限）。下のURLを開いてJSONを全部コピーし、貼り付け欄にペーストしてください。";
+      render();
+    }
+  },
+  chParse:()=>{
+    try{
+      const rows=harvestTags(JSON.parse(V.chPaste),4);
+      if(!rows.length) throw 0;
+      chAddPool(rows); V.chPaste=""; V.chErr=""; say(rows.length+"人を読み込みました");
+    }catch(e){ V.chErr="解析できません。JSONを丸ごと貼ってください（キャラタグが1人も入ってない可能性も）。"; render(); }
+  },
+  chCommit:()=>{
+    const pc=planChars(V.chPool,{minCount:V.chMin,minChars:V.chMinChars});
+    if(!pc.total){ say("取り込めるキャラがいません"); return; }
+    const mk=(n,c)=>({id:uid(),tag:n,ja:"",w:V.chWeight?logWeight(c):1,emph:1,on:true,fix:false});
+    const getG=nm=>{
+      let g=D.groups.find(x=>x.name===nm&&x.char);
+      if(!g){ g={id:uid(),name:nm,min:1,max:1,on:false,req:false,mode:"roll",setOn:false,char:true,tags:[]}; D.groups.push(g); }
+      return g;
+    };
+    const fill=(g,arr)=>{
+      const have=new Set(g.tags.map(t=>norm(t.tag)));
+      for(const it of arr) if(!have.has(norm(it.name))){ g.tags.push(mk(it.name,it.count)); have.add(norm(it.name)); }
+    };
+    mutate(()=>{
+      const all=[];
+      for(const [s,arr] of pc.bySeries){
+        const g=getG(s);
+        fill(g,arr);
+        if(V.chCopy&&!g.tags.some(t=>norm(t.tag)===norm(s)))
+          g.tags.push({id:uid(),tag:s,ja:"作品タグ",w:1,emph:1,on:true,fix:true});
+        all.push(...arr);
+      }
+      if(pc.other.length){ fill(getG("その他キャラ"),pc.other); all.push(...pc.other); }
+      if(V.chAll&&all.length) fill(getG("全キャラ"),all);
+      V.chPool=[];
+      V.toast=pc.total+"キャラを取り込みました";
+    });
+  },
+  hideOff:()=>{ V.hideOff=!V.hideOff; render(); },
   copyDbURL:()=>copy(dbURL(V.dbCat,1)),
   copyPURL:()=>copy(V.pURL),
   dbFetch:async()=>{
@@ -1354,6 +1951,7 @@ const ACT={
 
   escP:()=>mutate(()=>{ D.settings.escapeParens=!D.settings.escapeParens; }),
   autoFrame:()=>mutate(()=>{ D.settings.autoFrame=!D.settings.autoFrame; }),
+  charSup:()=>mutate(()=>{ D.settings.charSuppress=!D.settings.charSuppress; }),
   under:()=>mutate(()=>{ D.settings.underscore=!D.settings.underscore; }),
 
   copyErr:()=>copy(V.lastErr||""),
@@ -1362,6 +1960,10 @@ const ACT={
   confirmYes:()=>{ const y=V.modal.yes; ACT[y](); if(V.modal&&V.modal.type==="confirm") V.modal=null; render(); }
 };
 
+function chAddPool(rows){
+  const seen=new Set(V.chPool.map(x=>x.name));
+  for(const r of rows) if(r.name&&!seen.has(r.name)){ seen.add(r.name); V.chPool.push(r); }
+}
 function addPool(rows){
   const seen=new Set(V.dbPool.map(x=>x.name));
   for(const r of rows) if(r.name&&!seen.has(r.name)){ seen.add(r.name); V.dbPool.push(r); }
@@ -1384,7 +1986,7 @@ function pruneRules(){
 
 const INP={
   q:v=>{ V.q=v; render(); },
-  bulk:v=>{ V.bulk=v; },
+  bulk:v=>{ V.bulk=v; refreshSug(); },
   impText:v=>{ const was=!!V.impText.trim(); V.impText=v; if(was!==!!v.trim()) render(); },
   batch:v=>{ D.settings.batch=clamp(Number(v)||1,1,30); persist(); },
   prefix:v=>{ D.settings.prefix=v; V.dirty=true; persist(); refreshOut(); },
@@ -1392,6 +1994,10 @@ const INP={
   negative:v=>{ D.settings.negative=v; V.dirty=true; persist(); },
   frameFull:v=>{ D.settings.frameFull=v; V.dirty=true; persist(); },
   frameCowboy:v=>{ D.settings.frameCowboy=v; V.dirty=true; persist(); },
+  charBlock:v=>{ D.settings.charBlock=v; V.dirty=true; persist(); },
+  lookGroups:v=>{ D.settings.lookGroups=v; V.dirty=true; persist(); },
+  ng:v=>{ D.settings.ng=v; V.dirty=true; persist(); refreshOut(); },
+  histQ:v=>{ V.histQ=v; render(); },
   gname:(v,d)=>{ G(d.id).name=v; V.dirty=true; persist(); },
   mTag:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.tag=v; V.dirty=true; persist(); },
   mJa:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.ja=v; V.dirty=true; persist(); },
@@ -1402,6 +2008,11 @@ const INP={
   dbMin:v=>{ V.dbMin=Math.max(0,Number(v)||0); render(); },
   dbBlock:v=>{ V.dbBlock=v; },
   dbNewName:v=>{ V.dbNewName=v; },
+  chSeries:v=>{ V.chSeries=v; },
+  chPages:v=>{ V.chPages=clamp(Number(v)||1,1,10); },
+  chPaste:v=>{ const was=!!V.chPaste.trim(); V.chPaste=v; if(was!==!!v.trim()) render(); },
+  chMin:v=>{ V.chMin=Math.max(0,Number(v)||0); render(); },
+  chMinChars:v=>{ V.chMinChars=clamp(Number(v)||1,1,20); render(); },
   pSrc:v=>{ const was=!!V.pSrc.trim(); V.pSrc=v; if(was!==!!v.trim()) render(); },
   pNewName:v=>{ V.pNewName=v; },
   refQ:v=>{ V.modal.q=v; render(); }
@@ -1467,10 +2078,13 @@ window.addEventListener("unhandledrejection",e=>{
   if(!fromStore) D=buildDefaults();
   D.settings={...DEFAULT_SETTINGS,...(D.settings||{})};
   D.rules=D.rules||[];
+  D.history=D.history||[];
   D.groups.forEach(g=>{
     if(g.req===undefined) g.req=false;
     if(g.mode===undefined) g.mode="roll";
     if(g.setOn===undefined) g.setOn=false;
+    if(g.char===undefined) g.char=false;
+    if(g.look===undefined) g.look=false;
     g.tags.forEach(t=>{ if(t.fix===undefined) t.fix=false; });
   });
   V.fresh=!fromStore&&canStore===false?true:!fromStore;
