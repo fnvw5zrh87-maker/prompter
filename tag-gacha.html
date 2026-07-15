@@ -91,6 +91,7 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
 .pin::before{content:"📌";font-size:9px;margin-right:1px}
 .chip{padding:2px 4px 2px 2px}
 .chip .cy{color:var(--dim2);padding:4px 5px;font-size:12px;line-height:1;border-radius:4px;background:rgba(255,255,255,.05)}
+.chip .cy[data-act="pinTag"]{opacity:.75}
 .chip.fix .cy{color:var(--brass)}
 .chip .lbl{padding:0 3px;display:inline-flex;align-items:center;gap:5px}
 .setbtn{border:1px solid var(--rule2);background:var(--ink3);color:var(--dim);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700}
@@ -159,7 +160,7 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
     <div class="bar"></div>
     <div class="sp">
       <div class="ttl">タグガチャ</div>
-      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.1 · 07/14</span></div>
+      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.4 · 07/14</span></div>
     </div>
     <div class="stat" id="stat"></div>
     <button class="save" id="save" data-act="backup">保存</button>
@@ -332,6 +333,17 @@ function makeBlocker(D){
   };
   return {bT,bG,fire};
 }
+function mergeMap(D){
+  const m=new Map();
+  for(const g of D.groups){
+    if(!g.on||!g.merge||g.mode==="set"||g.char) continue;
+    if(!m.has(g.merge)) m.set(g.merge,[]);
+    m.get(g.merge).push(g);
+  }
+  for(const [k,v] of [...m]) if(v.length<2) m.delete(k);
+  return m;
+}
+
 function generate(D,locks,prev){
   locks=locks||{};
   const {bT,bG,fire}=makeBlocker(D);
@@ -375,6 +387,19 @@ function generate(D,locks,prev){
       const g=D.groups.find(x=>x.name===nm&&!x.char);
       if(g){ bG.add(g.id); g.tags.forEach(t=>bT.add(t.id)); byGroup[g.id]=[]; }
     }
+  }
+
+  // 1.8) 一体化グループ
+  const merges=mergeMap(D);
+  for(const [mid,gs] of merges){
+    const rep=gs[0];
+    if(done.has(rep.id)){ gs.forEach(g=>done.add(g.id)); continue; }
+    gs.forEach(g=>done.add(g.id));
+    const merged={id:rep.id,min:rep.min,max:rep.max,tags:gs.flatMap(g=>g.tags)};
+    const anyBlocked=gs.every(g=>bG.has(g.id));
+    const picked=anyBlocked?[]:rollGroup(merged,bT,rep.req?Math.max(1,rep.min):null);
+    emit(rep,picked);
+    gs.slice(1).forEach(g=>{ byGroup[g.id]=byGroup[g.id]||[]; });
   }
 
   // 2) 必須 → 通常
@@ -466,9 +491,10 @@ function toSegs(D,res){
       segs.push({t:part,f:fix});
     }
   };
-  if(s.prefix.trim()) add(s.prefix,true);
-  if(res) for(const g of D.groups) (res.byGroup[g.id]||[]).forEach(t=>add(fmtTag(t,s),!!t.fix));
-  if(s.suffix.trim()) add(s.suffix,true);
+  const fixOn = s.fixOn!==false;
+  if(fixOn && s.prefix.trim()) add(s.prefix,true);
+  if(res) for(const g of D.groups) (res.byGroup[g.id]||[]).forEach(t=>{ if(t.fix && !fixOn) return; add(fmtTag(t,s),!!t.fix); });
+  if(fixOn && s.suffix.trim()) add(s.suffix,true);
   return segs;
 }
 function toPrompt(D,res){ return toSegs(D,res).map(x=>x.t).join(", "); }
@@ -789,8 +815,7 @@ function viewGen(){
     <button class="btn lever full" data-act="saveLook" style="margin-top:8px;padding:11px"${V.result?"":" disabled"}>👤 この見た目をキャラとして保存</button>
     <div class="mini" style="margin-top:5px">気に入った見た目が出たら押す。<b style="color:var(--txt)">髪・目・顔・服だけ抜き出して📌固定のセット枠</b>になります。以後はボタン1つでその子を呼び出して、ポーズ・背景・光だけガチャれる。</div>
     <div class="mini" style="margin-top:6px"><span style="color:var(--brass)">■</span> 確定（毎回入る） <span style="color:var(--tag);margin-left:8px">■</span> 抽選で出たやつ<br>
-      下のタグの <b style="color:var(--txt)">◀ ▶</b> で、その枠だけ単語を切り替えられます（blue eyes ▶ red eyes ▶ …）。<br>
-      📌の固定タグも同じように回せます。</div>
+      各タグの <b style="color:var(--brass)">📍</b> でその<b style="color:var(--txt)">1個だけ固定</b>（次から抽選しても残る）。<b style="color:var(--txt)">◀ ▶</b> で単語切り替え、<b style="color:var(--txt)">✕</b> で削除。</div>
   </div></div>`;
 
   const offN=D.groups.filter(g=>!g.on).length;
@@ -834,8 +859,9 @@ function viewGen(){
     if(picks.length){
       h+=`<div class="chips" style="padding:9px 10px">`+picks.map(t=>
         `<span class="chip${t.fix?" fix":""}">
+          <button class="cy" data-act="pinTag" data-id="${g.id}" data-tid="${t.id}" title="この単語だけ固定/解除" style="${t.fix?"color:var(--brass)":""}">${t.fix?"📌":"📍"}</button>
           <button class="cy" data-act="cycle" data-id="${g.id}" data-tid="${t.id}" data-d="-1">◀</button>
-          <span class="lbl">${t.fix?'<span style="font-size:9px">📌</span>':""}${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}</span>
+          <span class="lbl">${esc(t.tag)}${t.ja?`<span class="ja">${esc(t.ja)}</span>`:""}</span>
           <button class="cy" data-act="cycle" data-id="${g.id}" data-tid="${t.id}" data-d="1">▶</button>
           <button class="x" data-act="dropTag" data-id="${g.id}" data-tid="${t.id}">✕</button></span>`
       ).join("")+`</div>`;
@@ -959,6 +985,16 @@ ${isSet?"":`
             <div class="mini">排他ルールで潰されず、最優先で必ず1個以上出す</div>
           </div>
           ${sw(!!g.req,"gReq",` data-id="${g.id}"`)}
+        </div>
+
+        <div class="row" style="background:${g.merge?"var(--brassd)":"var(--ink3)"};border-radius:8px;padding:8px 12px;margin-bottom:8px">
+          <span style="flex:none">🔗</span>
+          <div class="sp">
+            <div style="font-size:12px;font-weight:700;color:${g.merge?"var(--brass)":"var(--dim)"}">一体化グループ ${g.merge?`<span class="mono" style="font-size:10px">#${esc(g.merge)}</span>`:""}</div>
+            <div class="mini">${g.merge?`同じ番号のグループと合体して1枠から抽選。${(()=>{const c=D.groups.filter(x=>x.merge===g.merge&&x.on).length;return c>=2?c+"グループ合体中":"⚠ 相方がOFF/未設定"})()}`:"他のグループと混ぜて、合計から抽選する"}</div>
+          </div>
+          <button class="btn" data-act="mergePick" data-id="${g.id}" style="padding:6px 10px;font-size:12px">${g.merge?"変更":"設定"}</button>
+          ${g.merge?`<button class="btn" data-act="mergeOff" data-id="${g.id}" style="padding:6px 8px;font-size:12px;color:var(--ng)">解除</button>`:""}
         </div>`}
 
         <div class="row" style="gap:8px;margin-bottom:10px">
@@ -1345,7 +1381,7 @@ function viewSet(){
 
   <div class="card"><div class="pad col">
     <div class="eb">バックアップ</div>
-    <div class="mini"><b style="color:var(--brass)">バージョン v2.1 · 07/14</b><br>
+    <div class="mini"><b style="color:var(--brass)">バージョン v2.4 · 07/14</b><br>
       グループ ${st.g} / 単語 ${st.t} / ルール ${st.r}。<br>
       ${canStore?"変更はこの端末に自動保存されます。":'<b style="color:var(--ng)">この環境では自動保存が効きません。必ずJSONを書き出して。</b>'}</div>
     <div class="row" style="gap:8px">
@@ -1455,6 +1491,28 @@ function viewModal(){
     return sheet("単語 / グループを選ぶ",body);
   }
 
+  if(m.type==="merge"){
+    const src=G(m.id);
+    const others=D.groups.filter(x=>x.id!==m.id&&x.mode!=="set"&&!x.char);
+    const groups=new Map();
+    for(const x of others){ if(x.merge){ if(!groups.has(x.merge)) groups.set(x.merge,[]); groups.get(x.merge).push(x); } }
+    let body=`<div class="mini">「${esc(src.name)}」を、どのグループと一体化しますか？<br>選ぶと2つが合体し、合計タグから1枠ぶん抽選されます。</div>`;
+    if(groups.size){
+      body+=`<div class="eb" style="margin-top:8px">既存の一体化に加える</div><div class="col" style="gap:5px">`;
+      for(const [mid,gs] of groups){
+        body+=`<button class="pickrow" data-act="mergeSet" data-id="${m.id}" data-mid="${esc(mid)}">
+          <span class="sp">🔗 #${esc(mid)}：${gs.map(g=>esc(g.name)).join(" + ")}</span></button>`;
+      }
+      body+=`</div>`;
+    }
+    body+=`<div class="eb" style="margin-top:12px">新しく相手を選ぶ（2つで新規一体化）</div>
+      <div class="col" style="gap:5px" >`+
+      others.filter(x=>!x.merge).map(x=>`<button class="pickrow" data-act="mergeNew" data-id="${m.id}" data-with="${x.id}">
+        <span class="sp">${esc(x.name)}</span><span class="mini mono">${x.tags.length}</span></button>`).join("")+
+      `</div>`;
+    return sheet("一体化する相手を選ぶ",body);
+  }
+
   if(m.type==="ukpick"){
     return sheet("「"+m.n+"」の行き先",
       `<div class="col" style="gap:5px">
@@ -1542,6 +1600,7 @@ const ACT={
   reset2:()=>{ D=buildDefaults(); V.result=null; V.locks={}; persist(); say("初期化しました"); },
   dismissFresh:()=>{ V.fresh=false; render(); },
   toggleFixBox:()=>{ V.fixOpen=!V.fixOpen; render(); },
+  fixOn:()=>mutate(()=>{ D.settings.fixOn = D.settings.fixOn===false; }),
 
   roll:()=>{ V.result=generate(D,V.locks,V.result); pushHistory(); render(); },
   resyncChars:()=>{ V.modal={type:"confirm",msg:"同梱キャラのリストを最新版に差し替えます。\n自分で追加したグループ・保存キャラ・取り込んだキャラは残ります。",yes:"resyncChars2"}; render(); },
@@ -1620,6 +1679,11 @@ const ACT={
 
   gOn:(d)=>mutate(()=>{ const g=G(d.id); g.on=!g.on; }),
   gReq:(d)=>mutate(()=>{ const g=G(d.id); g.req=!g.req; }),
+  mergePick:(d)=>{ V.modal={type:"merge",id:d.id}; render(); },
+  mergeOff:(d)=>mutate(()=>{ const g=G(d.id); const mid=g.merge; g.merge=null;
+    const rest=D.groups.filter(x=>x.merge===mid); if(rest.length<2) rest.forEach(x=>x.merge=null); }),
+  mergeSet:(d)=>mutate(()=>{ G(d.id).merge=d.mid; V.modal=null; V.toast="一体化しました"; }),
+  mergeNew:(d)=>mutate(()=>{ const mid=uid().slice(-4); G(d.id).merge=mid; G(d.with).merge=mid; V.modal=null; V.toast="一体化しました"; }),
   gMode:(d)=>mutate(()=>{
     const g=G(d.id);
     g.mode = g.mode==="set" ? "roll" : "set";
@@ -1633,6 +1697,15 @@ const ACT={
     if(!V.result) V.result={byGroup:{}};
     V.result={byGroup:{...V.result.byGroup,[g.id]: g.setOn ? g.tags.filter(t=>t.on) : []}};
     V.dirty=true; persist(); render();
+  },
+  pinTag:(d)=>{
+    const g=G(d.id); if(!g) return;
+    const t=g.tags.find(x=>x.id===d.tid);
+    if(!t){ say("この単語は編集できません（一体化の相方など）"); return; }
+    t.fix=!t.fix;
+    V.dirty=true; persist();
+    say(t.fix?`「${t.tag}」を固定しました`:`「${t.tag}」の固定を解除`);
+    render();
   },
   cycle:(d)=>{
     const g=G(d.id);
@@ -2079,12 +2152,14 @@ window.addEventListener("unhandledrejection",e=>{
   D.settings={...DEFAULT_SETTINGS,...(D.settings||{})};
   D.rules=D.rules||[];
   D.history=D.history||[];
+  if(D.settings.fixOn===undefined) D.settings.fixOn=true;
   D.groups.forEach(g=>{
     if(g.req===undefined) g.req=false;
     if(g.mode===undefined) g.mode="roll";
     if(g.setOn===undefined) g.setOn=false;
     if(g.char===undefined) g.char=false;
     if(g.look===undefined) g.look=false;
+    if(g.merge===undefined) g.merge=null;
     g.tags.forEach(t=>{ if(t.fix===undefined) t.fix=false; });
   });
   V.fresh=!fromStore&&canStore===false?true:!fromStore;
