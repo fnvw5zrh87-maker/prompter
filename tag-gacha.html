@@ -142,7 +142,11 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
 .rr .no{font-family:var(--mono);font-size:10px;color:var(--dim2);width:22px;flex:none;text-align:right}
 .rr .nm{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rr button{flex:none;color:var(--dim2);padding:4px 6px;border-radius:5px;background:rgba(255,255,255,.05);font-size:12px;line-height:1}
-.rr .grab{background:var(--ink4);color:var(--txt);padding:6px 9px;font-size:14px}
+.rr .grab{background:var(--ink4);color:var(--txt);padding:8px 11px;font-size:16px;touch-action:none;cursor:grab}
+.rr.dragging{opacity:.35}
+.rr .qbtn{background:var(--ink4);color:var(--txt);padding:6px 8px;font-size:13px;font-weight:700}
+#ghost{position:fixed;left:0;top:0;z-index:60;pointer-events:none;opacity:.95;box-shadow:0 8px 24px rgba(0,0,0,.5);width:calc(100% - 24px);max-width:736px}
+#dropline{position:fixed;left:0;right:0;z-index:59;height:3px;background:var(--brass);pointer-events:none;box-shadow:0 0 8px var(--brass)}
 .uk{display:flex;align-items:center;gap:8px;background:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:6px 8px}
 .uk.off{background:transparent;opacity:.4}
 .cb{width:20px;height:20px;border:1px solid var(--rule2);border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;color:#241c08}
@@ -160,7 +164,7 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
     <div class="bar"></div>
     <div class="sp">
       <div class="ttl">タグガチャ</div>
-      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.4 · 07/14</span></div>
+      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.6 · 07/14</span></div>
     </div>
     <div class="stat" id="stat"></div>
     <button class="save" id="save" data-act="backup">保存</button>
@@ -316,9 +320,52 @@ function rollGroup(g,blocked,minOv){
   for(let i=0;i<n&&avail.length;i++){ const k=weightedIndex(avail); out.push(avail[k]); avail.splice(k,1); }
   return out;
 }
+
+/* ══════════ 矛盾辞書（両立しないタグの組。textベース・双方向） ══════════ */
+const CONFLICTS_BUILTIN = [
+  ["closed eyes","blue eyes,red eyes,green eyes,yellow eyes,purple eyes,brown eyes,black eyes,pink eyes,aqua eyes,orange eyes,grey eyes,heterochromia,gradient eyes,multicolored eyes,looking at viewer,looking to the side,looking back,looking up,looking down,eye contact,star-shaped pupils,heart-shaped pupils,slit pupils,glowing eyes,sparkling eyes,constricted pupils"],
+  ["one eye closed","eye contact"],
+  ["portrait","full body,cowboy shot,wide shot,thighhighs,boots,heels,skirt,pants,shoes"],
+  ["close-up","full body,cowboy shot,wide shot"],
+  ["upper body","full body,thigh boots,knee boots,boots,high heels,sneakers,sandals,thighhighs,pantyhose,kneehighs,pleated skirt,miniskirt,long skirt,shorts,pants,jeans,leggings,bare legs,zettai ryouiki"],
+  ["full body","portrait,close-up"],
+  ["from behind","looking at viewer,eye contact,smile,open mouth,blush,tsurime,tareme,jitome,mole under eye,mole under mouth,mole on cheek,eyeshadow,eyeliner,lipstick,:d,:o,:3,fang,fangs"],
+  ["closed mouth","open mouth,:d,:o,tongue out,fang,fangs,teeth"],
+  ["expressionless","smile,grin,evil grin,smug,seductive smile,angry,embarrassed,crying,laughing,happy,sad,scared,pout,surprised"],
+  ["simple background","outdoors,indoors,classroom,bedroom,kitchen,cafe,library,city,cityscape,street,alley,rooftop,forest,bamboo forest,flower field,beach,ocean,underwater,sky,mountain,garden,park,shrine,temple,ruins,castle,laboratory,train interior,festival,snow,desert,space,starry sky"],
+  ["white background","outdoors,indoors,cityscape,forest,beach,ocean,sky,scenery"],
+  ["transparent background","outdoors,indoors,scenery,cityscape"],
+  ["day","night,moonlight,starry sky,neon lights"],
+  ["night","day,sunlight,dappled sunlight"],
+  ["standing","sitting,lying,on back,on stomach,kneeling,squatting,seiza,wariza,hugging own knees"],
+  ["lying","standing,walking,running,jumping,dancing"],
+  ["sitting","standing,walking,running,jumping"],
+  ["very short hair","long hair,very long hair,absurdly long hair"],
+  ["short hair","very long hair,absurdly long hair"],
+  ["long hair","very short hair,short hair"],
+  [":d","closed mouth"]
+];
+function conflictMap(D){
+  const m=new Map();
+  const add=(a,b)=>{ const k=norm(a); if(!m.has(k)) m.set(k,new Set()); m.get(k).add(norm(b)); };
+  const feed=list=>{ for(const [a,rest] of list){ for(const b of String(rest).split(",").map(x=>x.trim()).filter(Boolean)){ add(a,b); add(b,a); } } };
+  if(D.settings.conflictOn!==false) feed(CONFLICTS_BUILTIN);
+  const extra=String(D.settings.conflictExtra||"").split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const pairs=[];
+  for(const line of extra){
+    const mm=line.split(/=>|:/);
+    if(mm.length>=2){ const a=mm[0].trim(); for(const b of mm[1].split(",").map(x=>x.trim()).filter(Boolean)) pairs.push([a,b]); }
+  }
+  feed(pairs);
+  return m;
+}
+
 function makeBlocker(D){
   const bT=new Set(),bG=new Set();
   const byId=new Map(D.groups.map(g=>[g.id,g]));
+  const cmap=conflictMap(D);
+  const byText=new Map();
+  for(const g of D.groups) for(const t of g.tags){ const k=norm(t.tag); if(!byText.has(k)) byText.set(k,[]); byText.get(k).push(t.id); }
   const block=ref=>{
     if(!ref) return;
     if(ref.k==="tag") bT.add(ref.id);
@@ -329,6 +376,10 @@ function makeBlocker(D){
       if(r.type!=="exclude") continue;
       if(r.a.k===hit.k&&r.a.id===hit.id) r.targets.forEach(block);
       if(r.dir==="both"&&r.targets.some(t=>t.k===hit.k&&t.id===hit.id)) block(r.a);
+    }
+    if(hit.k==="tag" && hit.text){
+      const bad=cmap.get(norm(hit.text));
+      if(bad) for(const bt of bad){ const ids=byText.get(bt); if(ids) ids.forEach(id=>bT.add(id)); }
     }
   };
   return {bT,bG,fire};
@@ -351,7 +402,7 @@ function generate(D,locks,prev){
   let setCharHit=false;
   const emit=(g,picked)=>{
     byGroup[g.id]=[...(byGroup[g.id]||[]),...picked];
-    picked.forEach(t=>fire({k:"tag",id:t.id}));
+    picked.forEach(t=>fire({k:"tag",id:t.id,text:t.tag}));
     if(picked.length) fire({k:"group",id:g.id});
   };
   // 0) セット枠 と 固定タグ を先に確定（排他もこれが勝つ）
@@ -461,7 +512,7 @@ function rerollOne(D,res,gid){
   for(const og of D.groups){
     if(og.id===gid) continue;
     const arr=res.byGroup[og.id]||[];
-    arr.forEach(t=>fire({k:"tag",id:t.id}));
+    arr.forEach(t=>fire({k:"tag",id:t.id,text:t.tag}));
     if(arr.length) fire({k:"group",id:og.id});
   }
   const fixed=g.tags.filter(t=>t.on&&t.fix);
@@ -887,41 +938,25 @@ function viewGen(){
   return h;
 }
 
+function rrRow(g,i){
+  const icon=g.char?"👤":g.mode==="set"?"📦":g.merge?"🔗":g.req?"📌":"";
+  return `<div class="rr" data-row="${g.id}">
+      <span class="no">${i+1}</span>
+      <button class="grab" data-grab="${g.id}">⠿</button>
+      <span class="nm" style="color:${g.on?"var(--txt)":"var(--dim2)"}">${icon}${icon?" ":""}${esc(g.name)}</span>
+      <span class="mono" style="font-size:10px;color:var(--dim2);flex:none">${g.tags.length}</span>
+      <button class="qbtn" data-act="gTop" data-id="${g.id}" title="先頭へ">⤒</button>
+      <button class="qbtn" data-act="gBottom" data-id="${g.id}" title="末尾へ">⤓</button>
+    </div>`;
+}
 function viewReorder(){
   let h=`<div class="row" style="gap:8px">
     <div class="sp"><b style="font-size:13px">⇅ 並び替え</b>
-      <div class="mini">上のグループほど<b style="color:var(--txt)">先に抽選され</b>、<b style="color:var(--txt)">プロンプトでも先に出ます</b>。排他ルールでも上が勝ちます。</div></div>
+      <div class="mini"><b style="color:var(--brass)">⠿ を長押しして上下にドラッグ</b>で移動。上ほどプロンプトで先に出ます（＝先に抽選）。</div></div>
     <button class="btn lever" data-act="reorder">完了</button>
-  </div>`;
-
-  if(V.moving){
-    const g=G(V.moving);
-    h+=`<div class="card hi"><div class="pad" style="padding:10px 12px">
-      <div class="row">
-        <span class="sp" style="font-size:13px;color:var(--brass);font-weight:700">「${esc(g?g.name:"")}」を移動中</span>
-        <button class="btn" data-act="dropEnd" style="padding:5px 9px;font-size:11px">最後尾へ</button>
-        <button class="btn" data-act="cancelMove" style="padding:5px 9px;font-size:11px">やめる</button>
-      </div>
-      <div class="mini" style="margin-top:4px">挿入したい位置のグループを<b style="color:var(--txt)">タップ</b>（その直前に入ります）</div>
-    </div></div>`;
-  }
-
-  h+=`<div class="col" style="gap:5px">`;
-  D.groups.forEach((g,i)=>{
-    const held=V.moving===g.id;
-    const drop=V.moving&&!held;
-    const icon=g.char?"👤":g.mode==="set"?"📦":g.req?"📌":"";
-    h+=`<div class="rr${held?" held":""}${drop?" drop":""}"${drop?` data-act="dropAt" data-id="${g.id}"`:""}>
-      <span class="no">${i+1}</span>
-      <button class="grab" data-act="pick" data-id="${g.id}">☰</button>
-      <span class="nm" style="color:${g.on?"var(--txt)":"var(--dim2)"}">${icon}${icon?" ":""}${esc(g.name)}</span>
-      <span class="mono" style="font-size:10px;color:var(--dim2);flex:none">${g.tags.length}</span>
-      <button data-act="gTop" data-id="${g.id}">⤒</button>
-      <button data-act="moveUp" data-i="${i}">▲</button>
-      <button data-act="moveDn" data-i="${i}">▼</button>
-      <button data-act="gBottom" data-id="${g.id}">⤓</button>
-    </div>`;
-  });
+  </div>
+  <div class="col" id="rrlist" style="gap:5px">`;
+  D.groups.forEach((g,i)=>{ h+=rrRow(g,i); });
   return h+`</div>`;
 }
 
@@ -929,7 +964,7 @@ function viewGroups(){
   if(V.reorder) return viewReorder();
   const lq=V.q.trim().toLowerCase();
   let h=`<div class="row" style="gap:8px;margin-bottom:2px">
-    <button class="btn solid full" data-act="reorder">⇅ 並び替え（${D.groups.length}グループ）</button>
+    <button class="btn solid full" data-act="reorder">⇅ ドラッグで並び替え（${D.groups.length}グループ）</button>
   </div>
   <div class="row" style="background:var(--ink2);border:1px solid var(--rule);border-radius:8px;padding:0 12px">
     <span style="color:var(--dim2)">🔍</span>
@@ -1342,6 +1377,14 @@ function viewSet(){
       <textarea rows="2" data-inp="ng" data-k="ngt" placeholder="出したくない単語を書くと、抽選からも出力からも消えます">${esc(s.ng)}</textarea></div>
     <div class="row"><div class="sp"><div style="font-size:13px;font-weight:700">重複タグを除去</div>
       <div class="mini">別グループから同じ単語が出ても1回だけにする</div></div>${sw(s.dedupe,"dedupe")}</div>
+    <div style="height:1px;background:var(--rule)"></div>
+    <div class="row"><span style="flex:none">⚠️</span>
+      <div class="sp"><div style="font-size:13px;font-weight:700;color:${s.conflictOn!==false?"var(--brass)":"var(--dim2)"}">矛盾タグを自動で除外</div>
+        <div class="mini">目を閉じてるのに瞳の色、全身なのに顔アップ…みたいな両立しない組を、抽選時に片方だけにする（先に出た方が勝ち）</div></div>
+      ${sw(s.conflictOn!==false,"conflictOn")}</div>
+    ${s.conflictOn!==false?`<div><div class="eb">自分で矛盾を追加（1行1組：<span class="mono">タグ => 相手, 相手</span>）</div>
+      <textarea rows="3" data-inp="conflictExtra" data-k="cfx" placeholder="chibi => realistic, mature female&#10;monochrome => colorful">${esc(s.conflictExtra||"")}</textarea>
+      <div class="mini" style="margin-top:4px">左のタグが出たら、右のタグ達を抽選から外します（双方向）。</div></div>`:""}
   </div></div>
 
   <div class="card"><div class="pad col">
@@ -1381,7 +1424,7 @@ function viewSet(){
 
   <div class="card"><div class="pad col">
     <div class="eb">バックアップ</div>
-    <div class="mini"><b style="color:var(--brass)">バージョン v2.4 · 07/14</b><br>
+    <div class="mini"><b style="color:var(--brass)">バージョン v2.6 · 07/14</b><br>
       グループ ${st.g} / 単語 ${st.t} / ルール ${st.r}。<br>
       ${canStore?"変更はこの端末に自動保存されます。":'<b style="color:var(--ng)">この環境では自動保存が効きません。必ずJSONを書き出して。</b>'}</div>
     <div class="row" style="gap:8px">
@@ -1666,6 +1709,7 @@ const ACT={
   histClear:()=>{ V.modal={type:"confirm",msg:"★を付けてない履歴を全部消します。",yes:"histClear2"}; render(); },
   histClear2:()=>mutate(()=>{ D.history=(D.history||[]).filter(x=>x.fav); }),
   dedupe:()=>mutate(()=>{ D.settings.dedupe=!D.settings.dedupe; }),
+  conflictOn:()=>mutate(()=>{ D.settings.conflictOn = D.settings.conflictOn===false; }),
   reroll:(d)=>{ V.result=V.result?rerollOne(D,V.result,d.id):generate(D,{},null); render(); },
   lock:(d)=>{ V.locks[d.id]=!V.locks[d.id]; render(); },
   dropTag:(d)=>{ if(!V.result) return;
@@ -2070,6 +2114,7 @@ const INP={
   charBlock:v=>{ D.settings.charBlock=v; V.dirty=true; persist(); },
   lookGroups:v=>{ D.settings.lookGroups=v; V.dirty=true; persist(); },
   ng:v=>{ D.settings.ng=v; V.dirty=true; persist(); refreshOut(); },
+  conflictExtra:v=>{ D.settings.conflictExtra=v; V.dirty=true; persist(); },
   histQ:v=>{ V.histQ=v; render(); },
   gname:(v,d)=>{ G(d.id).name=v; V.dirty=true; persist(); },
   mTag:v=>{ const g=G(V.modal.gid),t=g.tags.find(x=>x.id===V.modal.tid); t.tag=v; V.dirty=true; persist(); },
@@ -2107,6 +2152,78 @@ const SEL={
 };
 
 /* ══════════ イベント ══════════ */
+/* ══════════ 並び替えドラッグ（iOS対応・pointer events） ══════════ */
+let drag=null;
+function orderIds(){ return D.groups.map(g=>g.id); }
+function rowEls(){ const l=$("rrlist"); return l?[...l.querySelectorAll("[data-row]")]:[]; }
+
+document.addEventListener("pointerdown",e=>{
+  const grab=e.target.closest("[data-grab]");
+  if(!grab||V.tab!=="groups"||!V.reorder) return;
+  e.preventDefault();
+  const id=grab.getAttribute("data-grab");
+  const row=grab.closest("[data-row]");
+  const rect=row.getBoundingClientRect();
+  drag={id, startY:e.clientY, offY:e.clientY-rect.top, h:rect.height, curY:e.clientY, order:orderIds(), moved:false};
+  try{ grab.setPointerCapture(e.pointerId); }catch(_){}
+
+  // ゴースト生成
+  const g=$("ghost")||document.createElement("div");
+  g.id="ghost";
+  const src=G(id);
+  g.innerHTML=`<div class="rr" style="background:var(--ink3);border-color:var(--brass)">
+    <span class="no"></span><span class="grab">⠿</span>
+    <span class="nm">${esc(src.name)}</span></div>`;
+  document.body.appendChild(g);
+  g.style.left="12px";
+  g.style.top=(e.clientY-drag.offY)+"px";
+  const dl=$("dropline")||document.createElement("div"); dl.id="dropline"; document.body.appendChild(dl);
+  row.classList.add("dragging");
+},{passive:false});
+
+document.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  e.preventDefault();
+  drag.curY=e.clientY; drag.moved=true;
+  const gh=$("ghost"); if(gh) gh.style.top=(e.clientY-drag.offY)+"px";
+
+  // 挿入位置を判定
+  const rows=rowEls();
+  let idx=rows.length;
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i].getBoundingClientRect();
+    if(e.clientY < r.top + r.height/2){ idx=i; break; }
+  }
+  drag.insertBefore = rows[idx] ? rows[idx].getAttribute("data-row") : null;
+  // ドロップライン位置
+  const dl=$("dropline");
+  if(dl){
+    if(rows[idx]){ dl.style.top=(rows[idx].getBoundingClientRect().top-3)+"px"; }
+    else if(rows.length){ dl.style.top=(rows[rows.length-1].getBoundingClientRect().bottom)+"px"; }
+  }
+  // オートスクロール（端で）
+  const M=90;
+  if(e.clientY<M) window.scrollBy(0,-12);
+  else if(e.clientY>window.innerHeight-M) window.scrollBy(0,12);
+},{passive:false});
+
+document.addEventListener("pointerup",e=>{
+  if(!drag) return;
+  const gh=$("ghost"); if(gh) gh.remove();
+  const dl=$("dropline"); if(dl) dl.remove();
+  const from=D.groups.findIndex(g=>g.id===drag.id);
+  if(drag.moved && from>=0){
+    const [g]=D.groups.splice(from,1);
+    let to = drag.insertBefore ? D.groups.findIndex(x=>x.id===drag.insertBefore) : D.groups.length;
+    if(to<0) to=D.groups.length;
+    D.groups.splice(to,0,g);
+    V.dirty=true; persist();
+  }
+  drag=null;
+  render();
+},{passive:false});
+document.addEventListener("pointercancel",()=>{ const g=$("ghost");if(g)g.remove(); const d=$("dropline");if(d)d.remove(); drag=null; render(); });
+
 document.addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");
   if(!el) return;
@@ -2153,6 +2270,8 @@ window.addEventListener("unhandledrejection",e=>{
   D.rules=D.rules||[];
   D.history=D.history||[];
   if(D.settings.fixOn===undefined) D.settings.fixOn=true;
+  if(D.settings.conflictOn===undefined) D.settings.conflictOn=true;
+  if(D.settings.conflictExtra===undefined) D.settings.conflictExtra="";
   D.groups.forEach(g=>{
     if(g.req===undefined) g.req=false;
     if(g.mode===undefined) g.mode="roll";
