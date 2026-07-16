@@ -48,7 +48,7 @@ nav{display:flex;gap:4px;padding:0 8px 6px;overflow-x:auto;-webkit-overflow-scro
 nav button{flex:none;font-size:12px;font-weight:700;color:var(--dim2);border-radius:8px;padding:8px 12px;border:1px solid transparent}
 nav button.sel{background:var(--brass);color:#241c08;border-color:var(--brass)}
 
-main{padding:12px 0 40px;display:flex;flex-direction:column;gap:12px}
+main{padding:12px 0 96px;display:flex;flex-direction:column;gap:12px}
 .card{background:var(--ink2);border:1px solid var(--rule);border-radius:12px}
 .card.hi{border-color:var(--brass)}
 .pad{padding:14px 16px}
@@ -154,7 +154,8 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
 .uk .nm{flex:1;min-width:0;font-family:var(--mono);font-size:12px;color:var(--tag);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .uk .to{flex:none;max-width:130px;background:var(--ink3);border:1px solid var(--rule2);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.lever{position:sticky;bottom:0;z-index:20;background:var(--ink);border-top:1px solid var(--rule);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.lever{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--ink);border-top:1px solid var(--rule);padding:10px 12px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.4)}
+.lever .wrap{max-width:760px;margin:0 auto}
 .lever .wrap{display:flex;gap:8px;padding:0}
 </style>
 </head>
@@ -164,7 +165,7 @@ input[type=file]{color:var(--dim);font-size:12px;padding:8px}
     <div class="bar"></div>
     <div class="sp">
       <div class="ttl">タグガチャ</div>
-      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.6 · 07/14</span></div>
+      <div class="sub">DANBOORU TAG ROLLER &nbsp;<span style="color:var(--brass)">v2.8 · 07/14</span></div>
     </div>
     <div class="stat" id="stat"></div>
     <button class="save" id="save" data-act="backup">保存</button>
@@ -257,7 +258,7 @@ const DEFAULT_SETTINGS={
   autoFrame:true, frameFull:DEF_FULL, frameCowboy:DEF_COWBOY,
   charSuppress:true,
   charBlock:"髪の長さ, 髪型・毛流れ, 髪色, 目の形, 瞳の色, 瞳孔・光, 顔の特徴・ほくろ, 服装（メイン）, 種族・獣要素, 体型・雰囲気",
-  ng:"", dedupe:true,
+  ng:"", dedupe:true, fixPresets:[], fixPresetCur:null,
   lookGroups:"基本構成, 髪の長さ, 髪型・毛流れ, 髪色, 目の形, 瞳の色, 瞳孔・光, 顔の特徴・ほくろ, 眉, 種族・獣要素, 体型・雰囲気, 服装（メイン）, ボトムス・脚, 靴, 帽子・頭部, アクセサリー"
 };
 const ngSet=()=>new Set(String(D.settings.ng||"").split(/[,\n]/).map(s=>norm(s)).filter(Boolean));
@@ -838,18 +839,21 @@ function viewGen(){
     </div></div>`;
   }
   const p=prompt();
-  h+=`<div class="card" style="border-color:var(--brass)"><div class="pad">
+  const fixOn=D.settings.fixOn!==false;
+  h+=`<div class="card" style="border-color:${fixOn?"var(--brass)":"var(--rule)"}"><div class="pad">
     <div class="row" style="margin-bottom:6px">
-      <span style="flex:none">📌</span>
-      <div class="sp"><b style="font-size:13px;color:var(--brass)">確定枠</b>
-        <div class="mini">抽選しない。何回ガチャっても、かならずこの文字列が入る。</div></div>
-      <button class="btn" data-act="toggleFixBox" style="padding:4px 8px;font-size:11px">${V.fixOpen?"閉じる":"ひらく"}</button>
+      <span style="flex:none;opacity:${fixOn?1:.4}">📌</span>
+      <div class="sp"><b style="font-size:13px;color:${fixOn?"var(--brass)":"var(--dim2)"}">確定枠 ${fixOn?"":"（OFF）"}</b>
+        <div class="mini">${fixOn?"抽選しない。何回ガチャっても、かならずこの文字列が入る。":"いまOFF。先頭・末尾テキストと📌固定タグを出力に入れていません。"}</div></div>
+      ${sw(fixOn,"fixOn")}
+      <button class="btn" data-act="toggleFixBox" style="padding:4px 8px;font-size:11px;margin-left:6px">${V.fixOpen?"閉じる":"ひらく"}</button>
     </div>
     ${V.fixOpen?`
       <div class="eb" style="margin-top:10px">先頭に入れる</div>
       <textarea rows="2" data-inp="prefix" data-k="pfx" placeholder="masterpiece, best quality, ...">${esc(D.settings.prefix)}</textarea>
       <div class="eb" style="margin-top:10px">末尾に入れる</div>
       <textarea rows="1" data-inp="suffix" data-k="sfx" placeholder="（任意）">${esc(D.settings.suffix)}</textarea>
+      ${fixPresetBar()}
       <div class="mini" style="margin-top:8px">単語ごとに📌を付けても同じことができます（グループタブ → 単語をタップ → 固定）。</div>
     `:`<div class="mono" style="font-size:11px;color:var(--brass);word-break:break-word;padding:4px 0">${D.settings.prefix.trim()?esc(D.settings.prefix):'<span style="color:var(--dim2)">（空）</span>'}</div>`}
   </div></div>
@@ -1365,6 +1369,11 @@ function viewHist(){
 function viewSet(){
   const s=D.settings, st=stats();
   return `<div class="card"><div class="pad col">
+    <div class="row" style="background:var(--ink3);border-radius:8px;padding:9px 12px">
+      <span style="flex:none">📌</span>
+      <div class="sp"><div style="font-size:13px;font-weight:700;color:${s.fixOn!==false?"var(--brass)":"var(--dim2)"}">確定枠を出力に入れる</div>
+        <div class="mini">OFFで先頭・末尾テキストと📌固定タグを全部止める（生成タブのスイッチと連動）</div></div>
+      ${sw(s.fixOn!==false,"fixOn")}</div>
     <div><div class="eb">確定枠・先頭（生成タブのと同じもの）</div><input type="text" class="mono" data-inp="prefix" data-k="pf" value="${esc(s.prefix)}"></div>
     <div><div class="eb">確定枠・末尾</div><input type="text" class="mono" data-inp="suffix" data-k="sf" value="${esc(s.suffix)}" placeholder="（任意）"></div>
     <div><div class="row"><div class="eb sp" style="margin:0">ネガティブプロンプト</div>
@@ -1424,7 +1433,7 @@ function viewSet(){
 
   <div class="card"><div class="pad col">
     <div class="eb">バックアップ</div>
-    <div class="mini"><b style="color:var(--brass)">バージョン v2.6 · 07/14</b><br>
+    <div class="mini"><b style="color:var(--brass)">バージョン v2.8 · 07/14</b><br>
       グループ ${st.g} / 単語 ${st.t} / ルール ${st.r}。<br>
       ${canStore?"変更はこの端末に自動保存されます。":'<b style="color:var(--ng)">この環境では自動保存が効きません。必ずJSONを書き出して。</b>'}</div>
     <div class="row" style="gap:8px">
@@ -1614,6 +1623,28 @@ function render_(){
   window.scrollTo(0,sy);
 }
 
+function fixPresetBar(){
+  const ps=D.settings.fixPresets||[];
+  const cur=D.settings.fixPresetCur;
+  let h=`<div style="margin-top:12px;border-top:1px solid var(--rule);padding-top:10px">
+    <div class="row" style="margin-bottom:6px">
+      <span class="eb" style="margin:0">確定枠プリセット</span>
+      <div class="sp"></div>
+      <button class="btn" data-act="fpSave" style="padding:4px 9px;font-size:11px">＋ 今の内容を保存</button>
+    </div>`;
+  if(!ps.length){
+    h+=`<div class="mini">先頭・末尾テキストをセットで保存して、ワンタップで切り替えられます。</div>`;
+  }else{
+    h+=`<div class="chips">`+ps.map(p=>
+      `<span class="chip${cur===p.id?" fix":""}" style="padding-right:2px">
+        <button class="cy" data-act="fpApply" data-id="${p.id}" style="color:${cur===p.id?"var(--brass)":"inherit"};background:none;padding:2px 4px">${cur===p.id?"● ":""}${esc(p.name)}</button>
+        <button class="x" data-act="fpDel" data-id="${p.id}" title="削除">✕</button></span>`
+    ).join("")+`</div>
+    <div class="mini" style="margin-top:5px">タップで適用。編集して「＋今の内容を保存」で別セットとして追加。</div>`;
+  }
+  return h+`</div>`;
+}
+
 /* ══════════ 操作 ══════════ */
 const G=id=>D.groups.find(g=>g.id===id);
 
@@ -1646,6 +1677,29 @@ const ACT={
   fixOn:()=>mutate(()=>{ D.settings.fixOn = D.settings.fixOn===false; }),
 
   roll:()=>{ V.result=generate(D,V.locks,V.result); pushHistory(); render(); },
+  fpSave:()=>{
+    const nm="セット"+((D.settings.fixPresets||[]).length+1);
+    mutate(()=>{
+      D.settings.fixPresets=D.settings.fixPresets||[];
+      const p={id:uid(),name:nm,prefix:D.settings.prefix||"",suffix:D.settings.suffix||""};
+      D.settings.fixPresets.push(p);
+      D.settings.fixPresetCur=p.id;
+      V.toast="プリセットを保存しました";
+    });
+  },
+  fpApply:(d)=>mutate(()=>{
+    const p=(D.settings.fixPresets||[]).find(x=>x.id===d.id);
+    if(!p) return;
+    D.settings.prefix=p.prefix; D.settings.suffix=p.suffix;
+    D.settings.fixPresetCur=p.id;
+    refreshOut();
+    V.toast="「"+p.name+"」を適用";
+  }),
+  fpDel:(d)=>mutate(()=>{
+    D.settings.fixPresets=(D.settings.fixPresets||[]).filter(x=>x.id!==d.id);
+    if(D.settings.fixPresetCur===d.id) D.settings.fixPresetCur=null;
+  }),
+
   resyncChars:()=>{ V.modal={type:"confirm",msg:"同梱キャラのリストを最新版に差し替えます。\n自分で追加したグループ・保存キャラ・取り込んだキャラは残ります。",yes:"resyncChars2"}; render(); },
   resyncChars2:()=>mutate(()=>{
     const names=new Set(CHARS.map(c=>c[0]));
@@ -2272,6 +2326,8 @@ window.addEventListener("unhandledrejection",e=>{
   if(D.settings.fixOn===undefined) D.settings.fixOn=true;
   if(D.settings.conflictOn===undefined) D.settings.conflictOn=true;
   if(D.settings.conflictExtra===undefined) D.settings.conflictExtra="";
+  if(!Array.isArray(D.settings.fixPresets)) D.settings.fixPresets=[];
+  if(D.settings.fixPresetCur===undefined) D.settings.fixPresetCur=null;
   D.groups.forEach(g=>{
     if(g.req===undefined) g.req=false;
     if(g.mode===undefined) g.mode="roll";
